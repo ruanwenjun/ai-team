@@ -14,9 +14,9 @@
 
 ---
 
-AI Team provides three skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) and Codex CLI that help you initialize, run, and update multi-agent teams. Each agent gets its own role, system prompt, capability profile, and working directory so the team can collaborate on your project like a real development group.
+AI Team provides three skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) and OpenAI Codex CLI that help you initialize, run, and update multi-agent teams. Each agent gets its own role, system prompt, and capability profile, then collaborates through shared project docs and issue directories like a real development group.
 
-The generated prompts and docs are reusable across AI agent tools. The interactive `run-team` workflow itself still depends on Claude Code's Agent tool for subagent dispatch; on other platforms, use the generated prompts directly and coordinate manually through the `.ai-team/project/issues/` files.
+The generated prompts and docs are shared assets used by the supported Claude Code and OpenAI Codex CLI workflows. Both platforms support the interactive `run-team` flow for dispatching the current stage directly.
 
 ## Optional External Superpowers Usage
 
@@ -37,7 +37,7 @@ Default role mapping when external skills are available:
 ## Features
 
 - **Guided lifecycle commands** — interactive-only `init-team`, `run-team`, and `update-team` that advance one stage at a time
-- **Reusable prompts and docs** — generated markdown assets can be reused in other AI agent tools
+- **Reusable prompts and docs** — generated markdown assets are shared across the supported Claude Code and OpenAI Codex CLI workflows
 - **Optional external Superpowers support** — use external brainstorming, planning, TDD, debugging, and verification skills only when they are available
 - **Role-specific system prompts** — each agent knows its identity, responsibilities, and how to collaborate
 - **Self-learning agents** — each agent updates its capability profile after every work stage, tracking new skills and growth
@@ -135,26 +135,6 @@ ln -s ~/ai-team/skills/codex/update-team ~/.codex/skills/update-team
 
 Restart Codex after installation so it can pick up the new skills.
 
-### Other AI Agent Tools
-
-AI Team generates reusable markdown files. You can use the generated prompts with any AI agent tool:
-
-1. Run `/init-team` in Claude Code (or manually create the `.ai-team/` directory structure)
-2. Copy the system prompt from `.ai-team/prompts/{role-id}.md`
-3. Paste it into your preferred tool's system prompt field:
-
-| Tool | Where to paste the prompt |
-|------|--------------------------|
-| **Cursor** | Rules for AI / `.cursorrules` file, or paste into chat |
-| **OpenAI Codex CLI** | `instructions.md` in your project root, or `~/.codex/instructions.md` |
-| **GitHub Copilot** | `.github/copilot-instructions.md` |
-| **Windsurf** | `.windsurfrules` file |
-| **Other tools** | System prompt / custom instructions field |
-
-The `run-team` skill requires Claude Code's Agent tool for subagent dispatch. For other platforms, use the generated prompts directly and manage task coordination manually through the `.ai-team/project/issues/` files.
-
----
-
 ## Quick Start
 
 All lifecycle commands are interactive-only and stage-gated:
@@ -183,19 +163,19 @@ Legacy argument-based forms are deprecated. If you used the previous command sty
 │   ├── requirements/       # Requirements docs
 │   ├── decisions/          # Architecture Decision Records
 │   └── changelog.md
-├── archive/
-│   └── roles/              # Removed roles preserved here by update-team
 ├── profiles/               # Each agent's skills & growth
 │   ├── pm.md
 │   ├── architect.md
 │   ├── rd-1.md
 │   └── ...
-└── prompts/                # System prompts (copy to any platform)
+└── prompts/                # System prompts for supported platforms
     ├── pm.md
     ├── architect.md
     ├── rd-1.md
     └── ...
 ```
+
+`/update-team` creates `.ai-team/archive/roles/{id}/` later when roles are removed. It is not part of the initial `init-team` scaffold.
 
 Each issue is a directory under `project/issues/` containing the issue file and all role worklogs:
 
@@ -334,11 +314,11 @@ The flow is stage-gated, so `/run-team` only surfaces the next valid action for 
 **init-team** generates structured markdown files that define your team. Each agent gets:
 - A **system prompt** with its identity, responsibilities, behavioral guidelines, and collaboration instructions
 - A **capability profile** tracking skills and growth, with a learning log
-- An **issue directory** containing the issue file and all role worklogs
+- Access to the shared **issue directories** that contain the issue file and all role worklogs
 
 `init-team` always asks for language first, then walks through template or custom composition selection, project naming, optional role customization, and final confirmation.
 
-In Claude Code, **run-team** reads these files and launches agents via the Agent tool:
+In Claude Code and OpenAI Codex CLI, **run-team** reads these files and runs the current stage either in-session or through the platform's agent/subagent mechanism:
 1. Reads the relevant prompts, profiles, and collaboration guidelines
 2. Either creates an issue for a new task or resumes an existing issue through the guided flow
 3. Dispatches only the current stage with full context

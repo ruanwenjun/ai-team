@@ -14,9 +14,9 @@
 
 ---
 
-AI Team 为 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 和 Codex CLI 提供三个 skill，帮助你初始化、运行和更新多智能体团队。每个智能体拥有独立的角色、系统提示词、能力档案和工作目录，像真实开发团队一样协作完成项目。
+AI Team 为 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 和 OpenAI Codex CLI 提供三个 skill，帮助你初始化、运行和更新多智能体团队。每个智能体拥有独立的角色、系统提示词和能力档案，并通过共享的项目文档与 Issue 目录协作，像真实开发团队一样完成项目。
 
-生成的提示词和文档可以在不同 AI 智能体工具之间复用。交互式的 `run-team` 工作流本身仍然依赖 Claude Code 的 Agent 工具来分派子智能体；在其他平台上，请直接使用生成的提示词，并通过 `.ai-team/project/issues/` 文件手动协调任务。
+生成的提示词和文档是 Claude Code 与 OpenAI Codex CLI 两个受支持工作流共享的资产。这两个平台都支持交互式 `run-team`，可以直接分派当前阶段所需的智能体。
 
 ## 可选的外部 Superpowers 支持
 
@@ -37,7 +37,7 @@ AI Team 可以在 Codex 和 Claude Code 两端使用外部 Superpowers skill，�
 ## 特性
 
 - **引导式生命周期命令** — 交互式 `init-team`、`run-team`、`update-team`，按阶段逐步推进
-- **可复用的提示词与文档** — 生成的 Markdown 资产可在其他 AI 智能体工具中复用
+- **可复用的提示词与文档** — 生成的 Markdown 资产可在受支持的 Claude Code 与 OpenAI Codex CLI 工作流中共享
 - **可选的外部 Superpowers 支持** — 只有在外部 skill 可用时，才使用 brainstorming、planning、TDD、debugging 和 verification
 - **角色专属提示词** — 每个智能体清楚自己的身份、职责和协作方式
 - **自我学习** — 每个智能体在每轮工作后自动更新能力档案，记录新技能和成长
@@ -135,26 +135,6 @@ ln -s ~/ai-team/skills/codex/update-team ~/.codex/skills/update-team
 
 安装后请重启 Codex，使新 skill 生效。
 
-### 其他 AI 智能体工具
-
-AI Team 生成的是可复用的 Markdown 文件，你可以在任何 AI 工具中使用生成的提示词：
-
-1. 在 Claude Code 中运行 `/init-team`（或手动创建 `.ai-team/` 目录结构）
-2. 复制 `.ai-team/prompts/{角色编号}.md` 中的系统提示词
-3. 粘贴到你喜欢的工具中：
-
-| 工具 | 粘贴位置 |
-|------|---------|
-| **Cursor** | Rules for AI / `.cursorrules` 文件，或直接粘贴到对话中 |
-| **OpenAI Codex CLI** | 项目根目录的 `instructions.md`，或 `~/.codex/instructions.md` |
-| **GitHub Copilot** | `.github/copilot-instructions.md` |
-| **Windsurf** | `.windsurfrules` 文件 |
-| **其他工具** | 系统提示词 / 自定义指令字段 |
-
-`run-team` skill 依赖 Claude Code 的 Agent 工具来分派子智能体。对于其他平台，可以直接使用生成的提示词，通过 `.ai-team/project/issues/` 文件手动管理任务协调。
-
----
-
 ## 快速开始
 
 所有生命周期命令现在都是交互式的，并按阶段门控推进：
@@ -183,19 +163,19 @@ AI Team 生成的是可复用的 Markdown 文件，你可以在任何 AI 工具�
 │   ├── requirements/       # 需求文档
 │   ├── decisions/          # 架构决策记录 (ADR)
 │   └── changelog.md
-├── archive/
-│   └── roles/              # update-team 归档被移除角色的位置
 ├── profiles/               # 每个智能体的能力和成长
 │   ├── pm.md
 │   ├── architect.md
 │   ├── rd-1.md
 │   └── ...
-└── prompts/                # 系统提示词（可复制到任何平台）
+└── prompts/                # 供受支持平台使用的系统提示词
     ├── pm.md
     ├── architect.md
     ├── rd-1.md
     └── ...
 ```
+
+`.ai-team/archive/roles/{id}/` 会在后续运行 `/update-team` 且有角色被移除时才创建，不属于 `init-team` 的初始脚手架。
 
 每个 Issue 是 `project/issues/` 下的一个目录，包含 Issue 文件和所有角色的工作日志：
 
@@ -334,11 +314,11 @@ Issue 标记为完成。
 **init-team** 生成结构化的 Markdown 文件来定义你的团队。每个智能体获得：
 - **系统提示词** — 包含身份、职责、行为准则和协作指南
 - **能力档案** — 记录技能、成长方向和学习日志
-- **Issue 目录** — 包含 Issue 文件和所有角色的工作日志
+- 对共享 **Issue 目录** 的访问方式 — Issue 目录中包含 issue 文件和所有角色的工作日志
 
 `init-team` 现在总是先询问语言，再进入模板或自定义组合、项目命名、可选角色自定义和最终确认。
 
-在 Claude Code 中，**run-team** 会通过 Agent 工具读取这些文件并启动智能体：
+在 Claude Code 和 OpenAI Codex CLI 中，**run-team** 会读取这些文件，并根据运行模式在当前会话执行或通过平台的 agent/subagent 机制启动当前阶段：
 1. 读取相关智能体的提示词、档案和协作规范
 2. 通过引导流程为新任务创建 Issue，或继续已有 Issue
 3. 只启动当前阶段所需的角色，并注入完整上下文
