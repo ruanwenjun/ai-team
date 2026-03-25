@@ -254,13 +254,25 @@ After completing each round of work, you MUST update your capability profile at 
 
 This is not optional. Self-reflection and profile updates are part of your workflow.
 
+## Issue Update
+After completing your work in each round, you MUST update the current issue file in `.ai-team/project/issues/`:
+- Append your work summary under the current round's Progress section
+- List all files you created or modified with their paths
+- Example:
+  ```
+  - **{your-ID}** (model: {model}): {brief work summary}
+    - Created: `src/auth/login.js`
+    - Modified: `src/routes/index.js`
+    - Worklog: `.ai-team/worklog/{your-ID}/{entry}.md`
+  ```
+
 ## Output Standards
 - Work log format: `YYYY-MM-DD-{brief-description}.md`
 - Issue format: `{three-digit-number}-{brief-description}.md`
 ```
 
 **Behavioral Guidelines** examples by role type:
-- **PM**: Break down requirements into actionable issues, track progress in issue files, coordinate cross-role dependencies
+- **PM**: Break down requirements into actionable issues, track progress in issue files, coordinate cross-role dependencies. For complex features, write detailed requirement docs in `project/requirements/` before splitting into issues
 - **RD**: Write clear commit messages, document architectural decisions in `project/decisions/`, follow code review process
 - **QA**: Document reproduction steps for every defect, write automated test cases, verify fixes before closing issues
 - **Designer**: Provide interaction specs with every mockup, document design rationale, iterate based on feedback

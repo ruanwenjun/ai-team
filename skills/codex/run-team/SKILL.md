@@ -38,8 +38,8 @@ Launch team members as subagents to work on tasks. Creates issues, dispatches ag
 
 Used when multiple roles are launched in one command within a single conversation.
 
-1. Make multiple Agent tool calls in one response (one per role).
-2. If concurrent Agent calls are unsupported, fall back to sequential execution.
+1. Launch multiple subagents in one response (one per role).
+2. If concurrent subagent calls are unsupported, fall back to sequential execution.
 3. After all agents complete, auto-generate a summary report.
 4. Enter the acceptance flow (see below).
 
@@ -128,17 +128,26 @@ Execute these steps in order:
    - With `--issue`: read the existing issue file. If not found, list existing issues.
 3. **Launch agents:**
    - For each role: read its prompt (`.ai-team/prompts/{id}.md`), profile (`.ai-team/profiles/{id}.md`), issue content, and collaboration guidelines (`.ai-team/collaboration.md`).
-   - Assemble the full context and launch the agent via the Agent tool.
+   - Assemble the full context and launch the agent as a subagent.
 4. **Agent execution:**
    - Each agent executes the task from its role perspective.
    - Each agent writes a worklog entry to `.ai-team/worklog/{id}/`.
+   - Each agent updates the current issue file — appending work summary and listing all files created/modified with paths under the current round's Progress section.
    - Each agent updates its own profile at `.ai-team/profiles/{id}.md` — adding new skills learned, updating growth areas, and logging what was learned in the Learning Log table.
    - Each agent reports the model it is running on (best-effort).
 5. **Collect results:**
    - Gather all agent outputs.
    - Generate a summary report.
    - Update the issue file with the round's results.
-6. **Enter acceptance flow** (single-session mode only).
+6. **Prompt user to review:** After all agents complete, display a checklist of files to review for each agent:
+   ```
+   ✅ {id} 已完成工作，请检查：
+   - Issue: `.ai-team/project/issues/{issue-file}`
+   - Worklog: `.ai-team/worklog/{id}/{worklog-entry}`
+   - Profile: `.ai-team/profiles/{id}.md`
+   - 产出文件: {list of files created/modified}
+   ```
+7. **Enter acceptance flow** (single-session mode only).
 
 ---
 
@@ -269,7 +278,7 @@ Handle these error cases with clear, actionable messages:
 | Role not found in team | Show available roles from `.ai-team/team.md` and ask the user to correct the input. |
 | Issue not found with `--issue` | List existing issues in `.ai-team/project/issues/` and ask the user to pick one. |
 | All specified roles are invalid (zero valid count) | Display error: "No valid roles specified." and show available roles. |
-| Agent tool call fails | Report the failure, record it in the issue file, and ask the user how to proceed. |
+| Subagent call fails | Report the failure, record it in the issue file, and ask the user how to proceed. |
 
 ---
 

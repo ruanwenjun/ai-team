@@ -38,19 +38,22 @@ AI Team 为 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 提供
 ```bash
 # 在你的项目根目录下
 git clone https://github.com/ruanwenjun/ai-team.git /tmp/ai-team
-cp -r /tmp/ai-team/skills/init-team .claude/skills/init-team
-cp -r /tmp/ai-team/skills/run-team .claude/skills/run-team
+mkdir -p .claude/skills
+cp -r /tmp/ai-team/skills/claude-code/init-team .claude/skills/init-team
+cp -r /tmp/ai-team/skills/claude-code/run-team .claude/skills/run-team
 ```
 
 Claude Code 会自动发现 `.claude/skills/` 中的 skills，无需额外配置。
+项目级 skills 只在**当前项目目录**（或其子目录）中生效。
 
 **方式 B：个人级 skills（所有项目通用）**
 
 ```bash
 # 复制到个人 skills 目录
 git clone https://github.com/ruanwenjun/ai-team.git /tmp/ai-team
-cp -r /tmp/ai-team/skills/init-team ~/.claude/skills/init-team
-cp -r /tmp/ai-team/skills/run-team ~/.claude/skills/run-team
+mkdir -p ~/.claude/skills
+cp -r /tmp/ai-team/skills/claude-code/init-team ~/.claude/skills/init-team
+cp -r /tmp/ai-team/skills/claude-code/run-team ~/.claude/skills/run-team
 ```
 
 **方式 C：软链接（通过 git pull 轻松更新）**
@@ -60,14 +63,53 @@ cp -r /tmp/ai-team/skills/run-team ~/.claude/skills/run-team
 git clone https://github.com/ruanwenjun/ai-team.git ~/ai-team
 
 # 软链接到个人 skills
-ln -s ~/ai-team/skills/init-team ~/.claude/skills/init-team
-ln -s ~/ai-team/skills/run-team ~/.claude/skills/run-team
+mkdir -p ~/.claude/skills
+ln -s ~/ai-team/skills/claude-code/init-team ~/.claude/skills/init-team
+ln -s ~/ai-team/skills/claude-code/run-team ~/.claude/skills/run-team
 ```
 
 安装后验证：
+1. 如果你是在 Claude Code 会话进行中才安装的，先退出并重新进入 Claude Code
+2. 确保你当前就在包含 `.claude/skills/` 的项目根目录中
+3. 再执行：
+
+```bash
+/init-team web-standard
 ```
-/init-team    # 应该能识别该 skill
+
+如果仍然提示 `Unrecognized command '/init-team'`，通常是因为：
+- Claude Code 不是从当前项目根目录启动的
+- skills 是在当前会话启动后才复制进去的，尚未重新加载
+
+### OpenAI Codex CLI
+
+将当前仓库中的 skill 安装到 Codex 的个人 skills 目录 `~/.codex/skills/`：
+
+```bash
+# 克隆仓库
+git clone https://github.com/ruanwenjun/ai-team.git /tmp/ai-team
+
+# 创建 Codex skills 目录
+mkdir -p ~/.codex/skills
+
+# 安装这两个 skill
+cp -r /tmp/ai-team/skills/codex/init-team ~/.codex/skills/init-team
+cp -r /tmp/ai-team/skills/codex/run-team ~/.codex/skills/run-team
 ```
+
+**可选：使用软链接，便于后续通过 `git pull` 更新**
+
+```bash
+# 克隆一次
+git clone https://github.com/ruanwenjun/ai-team.git ~/ai-team
+
+# 软链接到 Codex skills
+mkdir -p ~/.codex/skills
+ln -s ~/ai-team/skills/codex/init-team ~/.codex/skills/init-team
+ln -s ~/ai-team/skills/codex/run-team ~/.codex/skills/run-team
+```
+
+安装后请重启 Codex，使新 skill 生效。
 
 ### 其他 AI 智能体工具
 

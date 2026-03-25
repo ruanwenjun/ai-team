@@ -38,19 +38,22 @@ Copy the skills into your project's `.claude/skills/` directory:
 ```bash
 # In your project root
 git clone https://github.com/ruanwenjun/ai-team.git /tmp/ai-team
-cp -r /tmp/ai-team/skills/init-team .claude/skills/init-team
-cp -r /tmp/ai-team/skills/run-team .claude/skills/run-team
+mkdir -p .claude/skills
+cp -r /tmp/ai-team/skills/claude-code/init-team .claude/skills/init-team
+cp -r /tmp/ai-team/skills/claude-code/run-team .claude/skills/run-team
 ```
 
 Claude Code auto-discovers skills in `.claude/skills/` — no configuration needed.
+Project-level skills only apply when Claude Code is started in this project directory (or one of its subdirectories).
 
 **Option B: Personal skills (available across all projects)**
 
 ```bash
 # Copy to your personal skills directory
 git clone https://github.com/ruanwenjun/ai-team.git /tmp/ai-team
-cp -r /tmp/ai-team/skills/init-team ~/.claude/skills/init-team
-cp -r /tmp/ai-team/skills/run-team ~/.claude/skills/run-team
+mkdir -p ~/.claude/skills
+cp -r /tmp/ai-team/skills/claude-code/init-team ~/.claude/skills/init-team
+cp -r /tmp/ai-team/skills/claude-code/run-team ~/.claude/skills/run-team
 ```
 
 **Option C: Symlink (easy updates via git pull)**
@@ -60,14 +63,53 @@ cp -r /tmp/ai-team/skills/run-team ~/.claude/skills/run-team
 git clone https://github.com/ruanwenjun/ai-team.git ~/ai-team
 
 # Symlink to personal skills
-ln -s ~/ai-team/skills/init-team ~/.claude/skills/init-team
-ln -s ~/ai-team/skills/run-team ~/.claude/skills/run-team
+mkdir -p ~/.claude/skills
+ln -s ~/ai-team/skills/claude-code/init-team ~/.claude/skills/init-team
+ln -s ~/ai-team/skills/claude-code/run-team ~/.claude/skills/run-team
 ```
 
 After installation, verify skills are available:
+1. If you installed the skills while Claude Code was already running, exit and start a new Claude Code session
+2. Make sure you are in the project root that contains `.claude/skills/`
+3. Then run:
+
+```bash
+/init-team web-standard
 ```
-/init-team    # Should show the skill is recognized
+
+If you still see `Unrecognized command '/init-team'`, it usually means:
+- Claude Code was not started from this project root
+- The skills were copied in after the current session started and have not been reloaded yet
+
+### OpenAI Codex CLI
+
+Install the skills into Codex's personal skills directory at `~/.codex/skills/`:
+
+```bash
+# Clone the repository
+git clone https://github.com/ruanwenjun/ai-team.git /tmp/ai-team
+
+# Create the Codex skills directory
+mkdir -p ~/.codex/skills
+
+# Install both skills
+cp -r /tmp/ai-team/skills/codex/init-team ~/.codex/skills/init-team
+cp -r /tmp/ai-team/skills/codex/run-team ~/.codex/skills/run-team
 ```
+
+**Optional: use symlinks for easier updates via `git pull`**
+
+```bash
+# Clone once
+git clone https://github.com/ruanwenjun/ai-team.git ~/ai-team
+
+# Symlink into Codex skills
+mkdir -p ~/.codex/skills
+ln -s ~/ai-team/skills/codex/init-team ~/.codex/skills/init-team
+ln -s ~/ai-team/skills/codex/run-team ~/.codex/skills/run-team
+```
+
+Restart Codex after installation so it can pick up the new skills.
 
 ### Other AI Agent Tools
 
