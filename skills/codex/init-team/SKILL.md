@@ -19,7 +19,7 @@ Quickly scaffold a complete AI agent team with role-specific prompts, capability
 
 - `/init-team`
 
-Legacy forms such as `/init-team web-standard`, `/init-team 1pm,1architect,2rd,1qa`, and any inline flags or options are deprecated.
+Legacy forms that append templates, custom compositions, or inline flags to the command are deprecated.
 
 If the user provides a legacy form:
 

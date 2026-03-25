@@ -1,43 +1,63 @@
 ---
 name: run-team
-description: Use when launching AI team members to work on tasks, dispatching role-specific agents, or managing iterative task acceptance with an AI team initialized by init-team
+description: Use when launching AI team members to work on tasks, guiding issue-based stage execution, or managing iterative task acceptance with an AI team initialized by init-team
 ---
 
 # Run AI Team
 
 ## Overview
 
-Launch team members as subagents to work on tasks. Creates issues, dispatches agents with role-specific prompts, collects results, and manages an architect-led, user-gated stage loop until PM acceptance is complete.
+Launch team members through a guided, issue-driven workflow. This skill creates or resumes issues, dispatches only the roles needed for the current stage, and keeps user approval gates between PM intake, architect planning, implementation, QA, architect final review, and PM acceptance.
 
 **Prerequisite:** `.ai-team/` directory must exist (created by `init-team`).
 
+**Interactive-only:** This skill accepts only the bare command `/run-team`.
+
+If the user supplies any legacy role list, issue number, task text, or language flag inline, stop immediately, explain that the old form is deprecated, and tell them to rerun the bare command.
+
 ---
 
-## Trigger and Argument Parsing
+## Trigger and Guided Launch Flow
 
-### Command Formats
+### Supported Command
 
-- `/run-team pm,architect --task "implement user login"` — start the gated intake and planning chain for a task
-- `/run-team all --task "..." --lang zh` — start all roles listed in `.ai-team/team.md` and generate new content in Chinese
-- `/run-team all --task "..."` — start all roles listed in `.ai-team/team.md`
-- `/run-team pm,architect` — interactive mode, ask the user for a task description
-- `/run-team rd-1 --issue 001` — continue working on an existing issue
+- `/run-team`
 
-### Rules
+### Guided Flow
 
-- **Task is always required.** If `--task` is not provided, prompt the user interactively.
-- **Project name** is read from `.ai-team/team.md`.
-- **Role IDs** are comma-separated, matching IDs defined in `.ai-team/team.md`.
-- **`all`** expands to every role listed in `.ai-team/team.md`.
-- **`--lang {zh|en}`** sets the language for the current invocation. If `--lang` is not provided, ask for language preference before the first stage starts.
-- **`--issue {number}`** resumes an existing issue instead of creating a new one. The full issue history is injected into each agent's context for continuity.
+Follow this sequence in order:
+
+1. Ask for language preference before any stage work begins.
+2. Validate that `.ai-team/` exists and that required team files are present.
+3. Validate the active team contains at least one pm, at least one architect, at least one development role, and at least one qa.
+4. If any required role category is missing, stop and tell the user to fix the team through `update-team` before continuing.
+5. Ask whether to `start a new task` or `continue an existing issue`.
+6. For a new task:
+   - collect the task description
+   - create a new issue
+   - begin at PM requirement intake
+7. For an existing issue:
+   - list available issues
+   - let the user choose one
+   - infer the current stage from the issue state
+8. Offer only valid next actions for that issue:
+   - `continue to the next stage`
+   - `rerun the current stage`
+   - `apply targeted feedback to the current stage`
+9. Launch only the roles required by the current stage.
+
+### Legacy Command Handling
+
+Treat any argument-based form that includes role lists, task text, issue selection, or language flags as deprecated.
+
+Do not parse them as partial input or defaults. Tell the user to rerun the bare command.
 
 ### Language Preference Resolution
 
-- If `--lang` is provided, use it directly and do not ask again.
-- If `--lang` is omitted, first collect any missing interactive task input, then detect a recommended default from the current user input and explicitly ask the user to choose between English and Chinese before launching the first stage.
-- Auto-detection only sets the recommended default. It never skips the language question.
-- When `--issue` is used, the selected language applies only to newly generated or appended content in this invocation. Existing issue history remains unchanged and may use a different language.
+- Always ask for language preference before the first stage starts.
+- You may recommend a default based on the current user input.
+- Recommendation never replaces the explicit language question.
+- The selected language applies only to newly generated or appended content in the current invocation.
 
 ---
 
@@ -45,7 +65,7 @@ Launch team members as subagents to work on tasks. Creates issues, dispatches ag
 
 ### Single-Session Mode
 
-Used when multiple roles are launched in one command within a single conversation.
+Used when one conversation advances the issue through one or more stages.
 
 1. Launch only the roles for the current stage, not the whole workflow at once.
 2. If concurrent Agent calls are unsupported, fall back to sequential execution for that stage.
@@ -54,13 +74,13 @@ Used when multiple roles are launched in one command within a single conversatio
 
 ### Multi-Session Mode
 
-Used when roles are launched in separate terminals or separate commands.
+Used when the user runs `/run-team` in separate terminals or separate conversations while continuing the same team workflow.
 
-1. Each terminal runs `/run-team {role} --task "..." ` or `/run-team {role} --issue {number}` independently.
-2. Coordination is file-based: agents check issue files for updates and write worklogs independently.
-3. No automatic summary — the user reviews files in `.ai-team/project/` manually.
-4. The same stage order and approval gates still apply; do not start a later stage until the previous stage has explicit user approval.
-5. In a new issue, start with `pm` (or `pm,architect` in one terminal) rather than launching developers or QA directly. Later stages should resume the approved issue with `--issue {number}`.
+1. Each session still starts from the bare `/run-team` command.
+2. The user selects the relevant existing issue through the guided flow.
+3. Coordination remains file-based through issue files and worklogs.
+4. No stage may be skipped; later stages still require explicit user approval.
+5. Launch only the roles required by the issue's current valid stage.
 
 ### Default Stage Order
 
@@ -74,24 +94,29 @@ The documented workflow is always:
 6. PM acceptance.
 
 Each handoff requires explicit user approval before the next stage starts. If the user asks for changes, relaunch only the role(s) in the current stage or the specific stage being revised.
+
 If architect assigns multiple developers in the implementation stage, they all work within the same gated stage. QA cannot begin until every assigned developer has completed their work and the user explicitly approves moving forward.
-
-### Mode Detection
-
-There is no explicit flag. The mode is determined by usage pattern:
-
-- Multiple roles in one command = single-session mode.
-- Separate commands in separate terminals = multi-session mode.
-
-**Note:** Issue numbering uses scan-and-increment. A race condition is possible in multi-session mode when two terminals create issues simultaneously, but this is rare in practice.
 
 ---
 
 ## Issue Management
 
-### Auto-Creation
+### New Issue Creation
 
-Scan `.ai-team/project/issues/` for the highest existing issue number and increment by one. Create the issue file at `.ai-team/project/issues/{number}-{slug}.md` (e.g., `001-implement-user-login.md`).
+When the user chooses to start a new task:
+
+1. Scan `.ai-team/project/issues/` for the highest existing issue number.
+2. Increment by one.
+3. Create the issue file at `.ai-team/project/issues/{number}-{slug}.md`.
+
+### Existing Issue Resume
+
+When the user chooses to continue an existing issue:
+
+1. List the existing issue files from `.ai-team/project/issues/`.
+2. Ask the user to choose one.
+3. Read the full issue file.
+4. Infer the current stage and valid next actions from the recorded stage status and progress.
 
 ### Issue File Structure
 
@@ -135,9 +160,9 @@ Scan `.ai-team/project/issues/` for the highest existing issue number and increm
 
 ### Rules
 
-- Each stage records: agent work summaries, model used, stage-specific assignments, and user feedback.
-- When `--issue` is used, read the existing file and inject its full content into agent context.
-- Race condition caveat: in multi-session mode, two agents may update the same issue file concurrently. Keep updates append-only to minimize conflicts.
+- Each stage records agent work summaries, model used, stage-specific assignments, and user feedback.
+- When continuing an existing issue, read the full issue file and inject its history into agent context.
+- Race condition caveat: in multi-session mode, two sessions may update the same issue file concurrently. Keep updates append-only to minimize conflicts.
 
 ---
 
@@ -150,7 +175,7 @@ Each subagent receives the following context, assembled in this order:
 3. **Full issue content** (task description + all stage history)
 4. **Collaboration guidelines** from `.ai-team/collaboration.md`
 
-When `--issue` is used, the full issue history is injected so the agent has complete context continuity across stages.
+When continuing an existing issue, the full issue history is injected so the agent has complete context continuity across stages.
 
 ---
 
@@ -160,32 +185,35 @@ Execute these steps in order:
 
 1. **Validate environment:**
    - Confirm `.ai-team/` directory exists. If not, tell the user to run `init-team` first.
-   - Confirm each specified role ID exists in `.ai-team/team.md`. If a role is not found, show available roles.
-2. **Create or read issue:**
-   - Without `--issue`: scan `.ai-team/project/issues/` for the highest number, increment, create a new issue file.
-   - With `--issue`: read the existing issue file. If not found, list existing issues.
-3. **Launch agents:**
-   - For each role in the active stage: read its prompt (`.ai-team/prompts/{id}.md`), profile (`.ai-team/profiles/{id}.md`), issue content, and collaboration guidelines (`.ai-team/collaboration.md`).
+   - Confirm key files exist: `.ai-team/team.md`, `.ai-team/prompts/`, `.ai-team/profiles/`, and `.ai-team/project/issues/`.
+   - Confirm the active team contains at least one pm, at least one architect, at least one development role, and at least one qa.
+   - If the team is incomplete, stop and tell the user to fix the team through `update-team`.
+2. **Resolve language and issue intent:**
+   - Ask for language preference.
+   - Ask whether to start a new task or continue an existing issue.
+3. **Create or read issue:**
+   - For a new task: collect task description, scan for the highest issue number, increment, and create a new issue file.
+   - For an existing issue: list existing issues, read the selected issue file, and infer the current stage from its status.
+4. **Determine valid next action:**
+   - Offer only `continue to the next stage`, `rerun the current stage`, or `apply targeted feedback to the current stage`.
+   - Use the issue state to decide which stage is eligible to run next.
+5. **Launch agents:**
+   - For each role in the active stage, read its prompt, profile, issue content, and collaboration guidelines.
    - Assemble the full context and launch the agent via the Agent tool.
-4. **Agent execution:**
+6. **Agent execution:**
    - Each agent executes the task from its role perspective.
    - Each agent writes a worklog entry to `.ai-team/worklog/{id}/`.
-   - Each agent updates the current issue file — appending work summary and listing all files created/modified with paths under the current stage's Progress section.
-   - Each agent updates its own profile at `.ai-team/profiles/{id}.md` — adding new skills learned, updating growth areas, and logging what was learned in the Learning Log table.
+   - Each agent updates the current issue file by appending work summary and listing all files created or modified under the current stage's Progress section.
+   - Each agent updates its own profile at `.ai-team/profiles/{id}.md`.
    - Each agent reports the model it is running on (best-effort).
-5. **Collect results:**
+7. **Collect results:**
    - Gather all agent outputs.
    - Generate a stage summary report.
-   - Update the issue file with the stage's results.
-6. **Prompt user to review:** After the current stage completes, display a checklist of files to review for each agent in that stage:
-   ```
-   ✅ {id} 已完成工作，请检查：
-   - Issue: `.ai-team/project/issues/{issue-file}`
-   - Worklog: `.ai-team/worklog/{id}/{worklog-entry}`
-   - Profile: `.ai-team/profiles/{id}.md`
-   - 产出文件: {list of files created/modified}
-   ```
-7. **Enter the stage gate** and wait for explicit user approval before launching the next stage.
+   - Update the issue file with the stage results.
+8. **Prompt user to review:**
+   - After the current stage completes, display a checklist of issue, worklog, profile, and produced files for each agent in that stage.
+9. **Enter the stage gate:**
+   - Wait for explicit user approval before launching the next stage.
 
 ---
 
@@ -197,9 +225,9 @@ Model identification is best-effort and may not always be accurate.
 - **Inject into subagent context** if detected, so agents can include it in their worklogs.
 - **Fallback:** the agent self-reports its model name. This may be inaccurate — note this caveat in output.
 - **Report locations:**
-  - Startup announcement (when agents are launched)
-  - Worklog entry (per agent)
-  - Summary report (per agent row)
+  - startup announcement
+  - worklog entry
+  - summary report
 
 ---
 
@@ -256,7 +284,7 @@ Generated after the current stage completes (single-session mode only).
 - **Overall:** Unresolved issues, risks, or items needing attention.
 - **Next steps:** Suggested actions if applicable.
 
-Present the summary report directly to the user in the conversation, then enter the acceptance flow.
+Present the summary report directly to the user in the conversation, then enter the stage gate.
 
 ---
 
@@ -264,18 +292,17 @@ Present the summary report directly to the user in the conversation, then enter 
 
 An iterative loop within the current conversation (single-session mode only):
 
-1. **Present** the current stage summary report to the user.
-2. **Interpret** the user's response using LLM judgment:
-   - **Approval** for the current stage ("approved", "looks good", "LGTM", "ship it", etc.) — mark the current stage complete and, if another stage remains, launch only the next stage after the user explicitly approves moving on. If the current stage is PM acceptance, mark the issue status as `done` and end the workflow.
-   - **Targeted feedback** ("architect revise the assignment", "qa recheck this") — append feedback to the issue file, relaunch only the role(s) in the current stage or the stage the feedback applies to.
-   - **Multi-role feedback** ("rd-1 and qa recheck this") — append feedback to the issue, relaunch only the specified role(s) for that stage.
-3. **Selective relaunch rules:**
-   - Only the specified stage or role(s) are relaunched. Results from earlier stages remain untouched.
+1. Present the current stage summary report to the user.
+2. Interpret the user's response using LLM judgment:
+   - **Approval** for the current stage marks that stage complete. If another stage remains, wait for the user to continue to the next stage. If the current stage is PM acceptance, mark the issue status as `done` and end the workflow.
+   - **Rerun request** keeps the issue at the same stage and relaunches only the role(s) in that stage.
+   - **Targeted feedback** appends feedback to the issue file and relaunches only the role(s) in the current stage or the stage the feedback applies to.
+3. Selective relaunch rules:
    - Relaunched agents receive the full issue history including the new feedback.
+   - Results from earlier approved stages remain untouched.
    - If one of several assigned developers needs revision, keep the workflow in the implementation stage until the user approves the implementation stage as a whole.
-   - Users can add roles for the current stage or the next stage, as long as the role exists in `.ai-team/team.md`. Validate before launching.
-4. **No extra commands needed** — the skill maintains the current issue context throughout the loop.
-5. **Loop continues** until PM acceptance is explicitly approved after architect final review.
+4. No extra commands are needed; the skill keeps the issue context active within the loop.
+5. The loop continues until PM acceptance is explicitly approved after architect final review.
 
 ---
 
@@ -312,23 +339,10 @@ Handle these error cases with clear, actionable messages:
 
 | Condition | Action |
 |---|---|
+| Legacy argument-based invocation | Tell the user the form is deprecated and they must rerun bare `/run-team`. |
 | `.ai-team/` directory missing | Tell the user: "No `.ai-team/` directory found. Run `init-team` first to set up your AI team." |
 | `.ai-team/` exists but key files missing (`team.md`, `prompts/`, `profiles/`) | Report the specific missing files and suggest re-running `init-team`. |
-| Role not found in team | Show available roles from `.ai-team/team.md` and ask the user to correct the input. |
-| Issue not found with `--issue` | List existing issues in `.ai-team/project/issues/` and ask the user to pick one. |
-| All specified roles are invalid (zero valid count) | Display error: "No valid roles specified." and show available roles. |
-| Agent tool call fails | Report the failure, record it in the issue file, and ask the user how to proceed. |
-
----
-
-## Future: Commander Mode
-
-> **Not in v1.** Planned for a future release.
-
-Commander mode introduces an orchestrator agent:
-
-- `/run-team --commander pm` — the PM agent acts as orchestrator.
-- The PM reads the task, decomposes it into subtasks, and dynamically dispatches other agents.
-- Other agents report back to the PM, who synthesizes results and presents them to the user.
-
-This is noted here for design awareness only. Do not implement commander mode logic.
+| Active team missing required coverage | Tell the user the team must include at least one pm, at least one architect, at least one development role, and at least one qa; direct them to `update-team`. |
+| Existing issue selection is invalid | List existing issues in `.ai-team/project/issues/` and ask the user to pick one. |
+| Stage cannot advance yet | Explain which earlier approval or unfinished work is still blocking the next stage. |
+| Agent call fails | Report the failure, record it in the issue file, and ask the user how to proceed. |
