@@ -295,7 +295,7 @@ Any abbreviation not listed above is treated as a custom role — AI generates a
 | Flag | Description | Default |
 |------|------------|---------|
 | `--name` | Project name in generated docs | Current directory name |
-| `--lang zh` | Generate content in Chinese | English |
+| `--lang {zh|en}` | Language for the current `init-team` or `run-team` invocation; if omitted, the skill asks and recommends a default from the current input language | Ask each run |
 | `--task` | Task description for `run-team` | (required) |
 | `--issue` | Resume an existing issue number | (creates new) |
 
@@ -306,6 +306,8 @@ Any abbreviation not listed above is treated as a custom role — AI generates a
 - A **capability profile** tracking skills and growth, with a learning log
 - A **worklog directory** for recording progress
 
+Before generation starts, `init-team` resolves a language preference. If `--lang` is missing, it asks each time and recommends English or Chinese based on the current input language.
+
 **run-team** reads these files and launches agents:
 1. Reads the relevant prompts, profiles, and collaboration guidelines
 2. Creates an issue to track the task
@@ -313,6 +315,8 @@ Any abbreviation not listed above is treated as a custom role — AI generates a
 4. The active role works, writes its worklog, and **updates its own capability profile** (new skills, growth areas, learning log)
 5. Pauses after each stage and waits for your explicit confirmation before moving on
 6. Continues through PM requirement intake, architect planning and assignment, implementation, QA review, architect final technical review, and PM final acceptance
+
+Before the first stage starts, `run-team` also resolves a language preference. If `--lang` is missing, it asks each time and recommends English or Chinese based on the current input language. For `--issue`, the selected language affects only newly appended content in that invocation.
 
 Agents communicate through files — issues, worklogs, and `@{role-id}` mentions in documents.
 

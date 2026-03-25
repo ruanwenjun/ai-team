@@ -18,6 +18,7 @@ Launch team members as subagents to work on tasks. Creates issues, dispatches ag
 ### Command Formats
 
 - `/run-team pm,architect --task "implement user login"` — start the gated intake and planning chain for a task
+- `/run-team all --task "..." --lang zh` — start all roles listed in `.ai-team/team.md` and generate new content in Chinese
 - `/run-team all --task "..."` — start all roles listed in `.ai-team/team.md`
 - `/run-team pm,architect` — interactive mode, ask the user for a task description
 - `/run-team rd-1 --issue 001` — continue working on an existing issue
@@ -28,7 +29,15 @@ Launch team members as subagents to work on tasks. Creates issues, dispatches ag
 - **Project name** is read from `.ai-team/team.md`.
 - **Role IDs** are comma-separated, matching IDs defined in `.ai-team/team.md`.
 - **`all`** expands to every role listed in `.ai-team/team.md`.
+- **`--lang {zh|en}`** sets the language for the current invocation. If `--lang` is not provided, ask for language preference before the first stage starts.
 - **`--issue {number}`** resumes an existing issue instead of creating a new one. The full issue history is injected into each agent's context for continuity.
+
+### Language Preference Resolution
+
+- If `--lang` is provided, use it directly and do not ask again.
+- If `--lang` is omitted, first collect any missing interactive task input, then detect a recommended default from the current user input and explicitly ask the user to choose between English and Chinese before launching the first stage.
+- Auto-detection only sets the recommended default. It never skips the language question.
+- When `--issue` is used, the selected language applies only to newly generated or appended content in this invocation. Existing issue history remains unchanged and may use a different language.
 
 ---
 

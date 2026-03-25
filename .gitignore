@@ -8,6 +8,8 @@
 
 # Internal docs (specs, plans)
 .superpowers/
+docs/superpowers/
 
 # AI team data (per-user)
 .ai-team/
+.claude

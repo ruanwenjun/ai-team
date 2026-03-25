@@ -17,7 +17,7 @@ Quickly scaffold a complete AI agent team with role-specific prompts, capability
 
 - Preset template: `/init-team web-standard`
 - Custom combination: `/init-team 1pm,1architect,2rd,1qa`
-- With options: `/init-team 1pm,1architect,2rd,1qa --name my-project --lang zh`
+- With options: `/init-team 1pm,1architect,2rd,1qa --name my-project --lang en`
 
 ### Interactive Mode
 
@@ -32,7 +32,7 @@ Custom combinations use `{count}{abbreviation}` comma-separated. Examples:
 ### Options
 
 - `--name {project-name}`: Set project name for generated documents. Defaults to the current working directory name.
-- `--lang zh`: Generate all document content in Chinese. Default is English. Directory and file names always remain in English.
+- `--lang {zh|en}`: Generate all document content in Chinese or English. If omitted, ask for the language preference before generation. Directory and file names always remain in English.
 
 ### Input Validation Rules
 
@@ -45,6 +45,14 @@ Apply these validation rules before generation:
    - **Merge** — only generate files that do not already exist, leaving existing files untouched
    - **Cancel** — abort without changes
 4. **Role count 0 or negative**: Silently ignore that role entry.
+5. **Invalid `--lang` value**: Show the accepted values `zh` and `en`, then request a valid selection.
+
+### Language Preference Resolution
+
+- If `--lang` is provided, use it directly and do not ask again.
+- If `--lang` is omitted in command mode, detect a recommended default from the current user input, then explicitly ask the user to choose between English and Chinese before generation.
+- In interactive mode, always ask for language preference as part of the guided flow.
+- Auto-detection only selects the recommended default. It never skips the language question.
 
 ---
 
@@ -361,7 +369,7 @@ When invoked with no arguments, follow this guided flow:
 1. **Display preset templates**: Show the Preset Team Templates table and ask the user to select one or enter a custom combination.
 2. **User selects**: Accept a template name (e.g., `web-standard`) or a custom combo (e.g., `1pm,1architect,2rd,1qa`).
 3. **Ask for project name**: Prompt for a project name. Default: current working directory name.
-4. **Ask for language preference**: "Generate documents in English (default) or Chinese?" Default: English.
+4. **Ask for language preference**: "Generate documents in English or Chinese?" Recommend a default based on the current user input.
 5. **Ask about customization**: "Would you like to customize role descriptions?" If yes:
    - Go role by role, showing the default values for each section
    - User can keep defaults, modify parts, or fully customize
@@ -376,8 +384,9 @@ When invoked with no arguments, follow this guided flow:
 Follow these steps to generate the team:
 
 1. **Parse input**: Determine team composition from template or custom combo. Apply naming rules.
-2. **Check for existing `.ai-team/`**: Apply the validation rules from Input Validation above (overwrite / merge / cancel).
-3. **Create directories** using shell commands with `mkdir -p`:
+2. **Resolve language preference**: If `--lang` is provided, use it. Otherwise ask for language preference before generation, recommending a default based on the current user input.
+3. **Check for existing `.ai-team/`**: Apply the validation rules from Input Validation above (overwrite / merge / cancel).
+4. **Create directories** using shell commands with `mkdir -p`:
    ```
    mkdir -p .ai-team/project/requirements .ai-team/project/issues .ai-team/project/decisions .ai-team/profiles .ai-team/prompts
    ```
@@ -385,7 +394,7 @@ Follow these steps to generate the team:
    ```
    mkdir -p .ai-team/worklog/{id}
    ```
-4. **Generate each file** listed below. Process roles in order, applying naming rules (single role = no number, multiple = numbered). Generate all files:
+5. **Generate each file** listed below. Process roles in order, applying naming rules (single role = no number, multiple = numbered). Generate all files:
    - `.ai-team/team.md`
    - `.ai-team/collaboration.md` (dynamically generated based on team composition)
    - `.ai-team/project/README.md`
@@ -396,8 +405,8 @@ Follow these steps to generate the team:
    - `.ai-team/profiles/{id}.md` for each team member
    - `.ai-team/prompts/{id}.md` for each team member
    - `.ai-team/worklog/{id}/.gitkeep` for each team member (empty file)
-5. **Display summary**: After generation, show a summary listing all created files and directories.
-6. **Suggest `.gitignore`**: Check if `.gitignore` exists and whether it already contains `.ai-team/`. If not, suggest adding it:
+6. **Display summary**: After generation, show a summary listing all created files and directories.
+7. **Suggest `.gitignore`**: Check if `.gitignore` exists and whether it already contains `.ai-team/`. If not, suggest adding it:
    ```
    echo ".ai-team/" >> .gitignore
    ```
@@ -405,7 +414,8 @@ Follow these steps to generate the team:
 
 ### Language Handling
 
-When `--lang zh` is specified or user selects Chinese in interactive mode:
-- All document **content** is written in Chinese
+When language preference is resolved:
+- `zh`: All document **content** is written in Chinese
+- `en`: All document **content** is written in English
 - Directory names and file names remain in English
 - Template structure remains the same, only the text content changes
