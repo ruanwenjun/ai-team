@@ -195,8 +195,38 @@ Each subagent receives the following context, assembled in this order:
 2. **Role profile** from `.ai-team/profiles/{id}.md` (read for context; agent will update it after completing work)
 3. **Full issue content** (task description + all stage history)
 4. **Collaboration guidelines** from `.ai-team/collaboration.md`
+5. **Superpowers skill content** (if available — see Superpowers Skill Injection below)
 
 When continuing an existing issue, the full issue history is injected so the agent has complete context continuity across stages.
+
+### Superpowers Skill Injection
+
+Subagents cannot invoke skills themselves. The orchestrator (main conversation) must load the relevant Superpowers skill content and inject it into each subagent's prompt.
+
+**Before dispatching a subagent**, the orchestrator should:
+
+1. Determine which Superpowers skill maps to the current stage (see Optional External Superpowers Usage above).
+2. Load the skill content using the platform's skill invocation mechanism.
+3. Include the loaded skill instructions in the subagent's prompt, wrapped in a clear section header:
+
+```
+## Superpowers Skill: {skill-name}
+{full skill content loaded by the orchestrator}
+```
+
+4. Tell the subagent in its prompt: "Follow the Superpowers Skill instructions above as your primary workflow for this stage."
+
+**Stage-to-skill mapping for injection:**
+
+| Stage | Skill to load | Skill name |
+|-------|--------------|------------|
+| PM requirement intake | brainstorming | `superpowers:brainstorming` |
+| Architect planning | writing-plans | `superpowers:writing-plans` |
+| Implementation | test-driven-development | `superpowers:test-driven-development` |
+| Implementation (bug/regression) | systematic-debugging | `superpowers:systematic-debugging` |
+| QA sign-off | verification-before-completion | `superpowers:verification-before-completion` |
+
+If the skill loading fails or the skill is not installed, continue with the normal AI Team workflow — do not block the stage.
 
 ---
 
@@ -218,24 +248,29 @@ Execute these steps in order:
 4. **Determine valid next action:**
    - Offer only `continue to the next stage`, `rerun the current stage`, or `apply targeted feedback to the current stage`.
    - Use the issue state to decide which stage is eligible to run next.
-5. **Launch agents:**
+5. **Load Superpowers skill for the current stage:**
+   - Determine which Superpowers skill maps to the current stage (see the stage-to-skill mapping table in Superpowers Skill Injection).
+   - Load the relevant skill content using the platform's skill invocation mechanism.
+   - If the skill loading fails or the skill is not installed, proceed without it.
+6. **Launch agents:**
    - For each role in the active stage, read its prompt, profile, issue content, and collaboration guidelines.
+   - Include the loaded Superpowers skill content (from step 5) in the subagent's prompt under a `## Superpowers Skill: {name}` header.
+   - Tell the subagent to follow the Superpowers Skill instructions as its primary workflow for this stage.
    - Assemble the full context and launch the agent as a subagent.
-6. **Agent execution:**
-   - Each agent executes the task from its role perspective.
-   - If the platform exposes the relevant external Superpowers skill for the current stage, the agent should use it.
-   - If the skill is not exposed, the agent should continue the normal AI Team stage workflow without inventing a local fallback.
+7. **Agent execution:**
+   - Each agent executes the task from its role perspective, following the injected Superpowers skill workflow when present.
+   - If no Superpowers skill was injected, the agent continues the normal AI Team stage workflow.
    - Each agent writes a worklog entry to `.ai-team/worklog/{id}/`.
    - Each agent updates the current issue file by appending work summary and listing all files created or modified under the current stage's Progress section.
    - Each agent updates its own profile at `.ai-team/profiles/{id}.md`.
    - Each agent reports the model it is running on (best-effort).
-7. **Collect results:**
+8. **Collect results:**
    - Gather all agent outputs.
    - Generate a stage summary report.
    - Update the issue file with the stage results.
-8. **Prompt user to review:**
+9. **Prompt user to review:**
    - After the current stage completes, display a checklist of issue, worklog, profile, and produced files for each agent in that stage.
-9. **Enter the stage gate:**
+10. **Enter the stage gate:**
    - Wait for explicit user approval before launching the next stage.
 
 ---
