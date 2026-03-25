@@ -84,9 +84,10 @@ Used when the user runs `/run-team` in separate terminals or separate conversati
 
 1. Each session still starts from the bare `/run-team` command.
 2. The user selects the relevant existing issue through the guided flow.
-3. Coordination remains file-based through issue files and worklogs.
-4. No stage may be skipped; later stages still require explicit user approval.
-5. Launch only the roles required by the issue's current valid stage.
+3. Coordination remains file-based through issue files, per-role stage status, and worklogs.
+4. Within the current stage, each assigned role is tracked individually as `pending`, `in-progress`, or `done`.
+5. A session should claim only `pending` roles by default. Re-running or taking over an `in-progress` role requires an explicit user choice.
+6. No stage may be skipped; later stages still require explicit user approval after every role in the current stage is `done`.
 
 ### Default Stage Order
 
@@ -101,7 +102,7 @@ The documented workflow is always:
 
 Each handoff requires explicit user approval before the next stage starts. If the user asks for changes, relaunch only the role(s) in the current stage or the specific stage being revised.
 
-If architect assigns multiple developers in the implementation stage, they all work within the same gated stage. QA cannot begin until every assigned developer has completed their work and the user explicitly approves moving forward.
+If architect assigns multiple developers in the implementation stage, the implementation stage stays open until every assigned developer role is `done`. QA cannot begin until every assigned developer role is `done` and the user explicitly approves moving forward.
 
 ### Role Selection and Run Modes
 
@@ -123,9 +124,9 @@ Before launching a stage, display the roles involved and let the user choose how
 
 | Mode | How it works |
 |------|-------------|
-| Single role | User picks one role. Its prompt, profile, issue content, collaboration guidelines, and Superpowers skill are loaded into the current conversation. The orchestrator acts as that role directly — no subagent. After this role completes, enter the stage gate. |
-| All roles — parallel subagents | Dispatch all roles via the Agent tool concurrently (existing behavior). |
-| All roles — sequential in session | Run each role one by one in the current conversation. After each role completes its work and writes its worklog/issue update, pause and wait for user confirmation before switching to the next role. After the last role completes, enter the stage gate. |
+| Single role | User picks one claimable role in the current stage. The orchestrator loads that role into the current conversation, marks it `in-progress`, runs it, then marks it `done`. If other roles in the stage remain unfinished, stay in the same stage instead of entering the stage gate. |
+| All roles — parallel subagents | Claim all remaining `pending` roles in the current stage, then dispatch them via the Agent tool concurrently. Enter the stage gate only after every role assigned to the stage is `done`. |
+| All roles — sequential in session | The current session claims and runs every remaining `pending` role in the stage one by one without returning to run-mode selection between roles. Enter the stage gate only after the last remaining role is `done`. |
 
 **Current-session execution rules:**
 
@@ -135,11 +136,23 @@ When running a role in the current session (single role or sequential mode):
 2. Load the relevant Superpowers skill via the Skill tool (if available).
 3. Announce: "Now acting as {role-id} ({role-name})."
 4. Follow the role's prompt and Superpowers skill instructions to execute the work.
-5. Write the worklog entry and update the issue file, same as a subagent would.
-6. Update the role's profile.
-7. Announce completion and present the stage summary.
+5. Before starting the role's actual work, update the issue file to mark that role `in-progress`.
+6. Write the worklog entry and update the issue file, same as a subagent would.
+7. Mark the role `done` in the issue file.
+8. Update the role's profile.
+9. If unfinished roles remain in the current stage, present the remaining role statuses and stay in the current stage. If no unfinished roles remain, present the full stage summary and enter the stage gate.
 
-**Stage gate behavior is the same regardless of run mode** — after all roles in the current stage have completed, wait for explicit user approval before proceeding to the next stage.
+### Role-Level Stage State
+
+Track each assigned role inside the current stage using this lifecycle:
+
+- `pending` — not started yet; claimable by any session
+- `in-progress` — claimed by one session; not claimable by another session unless the user explicitly requests a rerun or takeover
+- `done` — role finished its work for the current stage
+
+Before launching any role, re-read the issue file and verify the role is still in the expected state. If another session already changed it, stop, refresh the current stage state, and show the user the latest role statuses.
+
+**Stage gate behavior is the same regardless of run mode** — enter the stage gate only after every role assigned to the current stage is `done`. A single-role run should not close the stage unless it completed the last unfinished role.
 
 ### Optional External Superpowers Usage
 
@@ -197,10 +210,25 @@ When the user chooses to continue an existing issue:
 ## Stage Status
 - PM requirement intake: approved
 - Architect planning: approved
-- Implementation: ready after architect assignment
-- QA review: pending architect assignment
+- Implementation: in-progress
+- QA review: blocked until implementation is approved
 - Architect final review: pending
 - PM acceptance: pending
+
+## Stage Role Status
+
+### Stage 1 - PM requirement intake
+- pm: done
+
+### Stage 2 - Architect planning
+- architect: done
+
+### Stage 3 - Implementation
+- rd-1: done
+- rd-2: pending
+
+### Stage 4 - QA review
+- qa: pending
 
 ## Progress
 
@@ -216,17 +244,18 @@ When the user chooses to continue an existing issue:
 
 ### Stage 3 - Implementation - {date}
 - **rd-1** (model: claude-opus-4-6): {implementation summary}
-- **rd-2** (model: claude-sonnet-4-6): {implementation summary if assigned}
-- **User Feedback**: approved for QA review
+- **Stage Progress**: rd-1 done, rd-2 pending
 
-## Status: done
+## Status: in-progress
 ```
 
 ### Rules
 
-- Each stage records agent work summaries, model used, stage-specific assignments, and user feedback.
+- Each stage records overall stage status, per-role stage status, agent work summaries, model used, stage-specific assignments, and user feedback.
 - When continuing an existing issue, read the full issue file and inject its history into agent context.
-- Race condition caveat: in multi-session mode, two sessions may update the same issue file concurrently. Keep updates append-only to minimize conflicts.
+- A stage may advance only after every role in its current `Stage Role Status` block is `done` and the user approves that stage.
+- In multi-session mode, mark roles `in-progress` before launch so other sessions can avoid double-claiming them.
+- Race condition caveat: in multi-session mode, two sessions may update the same issue file concurrently. Re-read the issue file before claiming a role, keep updates append-only where possible, and refresh role status after any collision.
 
 ---
 
@@ -287,13 +316,16 @@ Execute these steps in order:
    - Ask whether to start a new task or continue an existing issue.
 3. **Create or read issue:**
    - For a new task: collect task description, scan for the highest issue number (by directory name), increment, create the issue directory, and write `issue.md` inside it.
-   - For an existing issue: list existing issue directories, read the selected `issue.md`, and infer the current stage from its status.
+   - For an existing issue: list existing issue directories, read the selected `issue.md`, and infer the current stage plus the per-role state for that stage.
 4. **Determine valid next action:**
-   - Offer only `continue to the next stage`, `rerun the current stage`, or `apply targeted feedback to the current stage`.
+   - If the current stage still has `pending` roles, offer only `run a remaining role`, `run all remaining roles`, `rerun/take over a role`, or `apply targeted feedback to the current stage`.
+   - If the current stage has only `in-progress` and `done` roles, offer only `wait for in-progress roles`, `rerun/take over a role`, or `apply targeted feedback to the current stage`.
+   - If every role in the current stage is `done`, offer only `continue to the next stage`, `rerun the current stage`, or `apply targeted feedback to the current stage`.
    - Use the issue state to decide which stage is eligible to run next.
 5. **Display roles and choose run mode:**
-   - Show the roles involved in the current stage.
+   - Show the roles involved in the current stage together with their current status (`pending`, `in-progress`, `done`).
    - Let the user choose: single role, all roles parallel subagents, or all roles sequential in session.
+   - `Single role` should default to a `pending` role. Selecting an `in-progress` role must be treated as an explicit takeover or rerun.
    - See "Role Selection and Run Modes" above for the full display format and mode details.
 6. **Load Superpowers skill for the current stage:**
    - Determine which Superpowers skill maps to the current stage (see the stage-to-skill mapping table in Superpowers Skill Injection).
@@ -301,28 +333,31 @@ Execute these steps in order:
    - If the Skill tool invocation fails or the skill is not installed, proceed without it.
 7. **Execute according to run mode:**
    - **Parallel subagents mode:**
+     - Claim each selected `pending` role by marking it `in-progress` in the issue file before launch.
      - For each role, read its prompt, profile, issue content, and collaboration guidelines.
      - Include the loaded Superpowers skill content in the subagent's prompt under a `## Superpowers Skill: {name}` header.
      - Tell the subagent to follow the Superpowers Skill instructions as its primary workflow.
      - Assemble the full context and launch the agent via the Agent tool.
    - **Single role or sequential mode (current session):**
+     - For each selected role, claim it by marking it `in-progress` in the issue file before execution.
      - Read the role's prompt, profile, issue content, and collaboration guidelines.
      - Announce "Now acting as {role-id} ({role-name})."
      - Follow the role's prompt and loaded Superpowers skill to execute the work directly in the current conversation.
-     - For sequential mode: after each role completes, pause and wait for user confirmation before starting the next role.
+     - For sequential mode: continue directly to the next remaining `pending` role in the same stage without returning to run-mode selection.
 8. **Role execution (all modes):**
    - Each role writes a worklog entry to the current issue directory at `.ai-team/project/issues/{number}-{slug}/{id}-stage-{n}-{stage-name}.md`.
-   - Each role updates the issue file (`issue.md` in the same directory) by appending work summary and listing all files created or modified under the current stage's Progress section.
+   - Each role updates the issue file (`issue.md` in the same directory) by appending work summary, listing all files created or modified under the current stage's Progress section, and marking its role status `done`.
    - Each role updates its own profile at `.ai-team/profiles/{id}.md`.
    - Each role reports the model it is running on (best-effort).
-8. **Collect results:**
+9. **Collect results:**
    - Gather all agent outputs.
-   - Generate a stage summary report.
-   - Update the issue file with the stage results.
-9. **Prompt user to review:**
+   - If unfinished roles remain in the stage, generate a role-progress report showing which roles are `done`, `pending`, and `in-progress`.
+   - If every role in the stage is `done`, generate the full stage summary report and update the issue file with the stage results.
+10. **Prompt user to review:**
+   - After each role run, display the files written by that role and the current role-status table for the stage.
    - After the current stage completes, display a checklist of all files in the issue directory and updated profiles for each agent in that stage.
-10. **Enter the stage gate:**
-   - Wait for explicit user approval before launching the next stage.
+11. **Enter the stage gate:**
+   - Wait for explicit user approval before launching the next stage, but only after every role in the current stage is `done`.
 
 ---
 
@@ -385,15 +420,16 @@ For files that do not support comments (JSON, binary, images, etc.), record the 
 
 ## Summary Report
 
-Generated after the current stage completes (single-session mode only).
+Generated after each role run in single-session mode. When a stage still has unfinished roles, present a role-progress report instead of a final stage summary.
 
 ### Structure
 
 - **Per agent:** What they did, files produced or modified, model used.
+- **Stage role status:** Which roles are `done`, `pending`, or `in-progress`.
 - **Overall:** Unresolved issues, risks, or items needing attention.
 - **Next steps:** Suggested actions if applicable.
 
-Present the summary report directly to the user in the conversation, then enter the stage gate.
+If every role in the current stage is `done`, present the summary report directly to the user in the conversation, then enter the stage gate. Otherwise present the role-progress report and keep the workflow in the current stage.
 
 ---
 
@@ -401,17 +437,18 @@ Present the summary report directly to the user in the conversation, then enter 
 
 An iterative loop within the current conversation (single-session mode only):
 
-1. Present the current stage summary report to the user.
-2. Interpret the user's response using LLM judgment:
+1. Enter the stage gate only when every role in the current stage is `done`.
+2. Present the current stage summary report to the user.
+3. Interpret the user's response using LLM judgment:
    - **Approval** for the current stage marks that stage complete. If another stage remains, wait for the user to continue to the next stage. If the current stage is PM acceptance, mark the issue status as `done` and end the workflow.
-   - **Rerun request** keeps the issue at the same stage and relaunches only the role(s) in that stage.
-   - **Targeted feedback** appends feedback to the issue file and relaunches only the role(s) in the current stage or the stage the feedback applies to.
-3. Selective relaunch rules:
+   - **Rerun request** keeps the issue at the same stage, resets the selected role(s) from `done` or `in-progress` back to `pending`, and relaunches only those role(s).
+   - **Targeted feedback** appends feedback to the issue file, resets the affected role(s) to `pending`, and relaunches only the role(s) in the current stage or the stage the feedback applies to.
+4. Selective relaunch rules:
    - Relaunched agents receive the full issue history including the new feedback.
    - Results from earlier approved stages remain untouched.
-   - If one of several assigned developers needs revision, keep the workflow in the implementation stage until the user approves the implementation stage as a whole.
-4. No extra commands are needed; the skill keeps the issue context active within the loop.
-5. The loop continues until PM acceptance is explicitly approved after architect final review.
+   - If one of several assigned developers needs revision, keep the workflow in the implementation stage until every assigned developer role returns to `done` and the user approves the implementation stage as a whole.
+5. No extra commands are needed; the skill keeps the issue context active within the loop.
+6. The loop continues until PM acceptance is explicitly approved after architect final review.
 
 ---
 
@@ -453,5 +490,8 @@ Handle these error cases with clear, actionable messages:
 | `.ai-team/` exists but key files missing (`team.md`, `prompts/`, `profiles/`) | Report the specific missing files and suggest re-running `init-team`. |
 | Active team missing required coverage | Tell the user the team must include at least one pm, at least one architect, at least one development role, and at least one qa; direct them to `update-team`. |
 | Existing issue selection is invalid | List existing issue directories in `.ai-team/project/issues/` and ask the user to pick one. |
+| No claimable roles remain in the current stage | Show the current role-status table and tell the user the stage is waiting on `in-progress` roles or ready for approval if all roles are `done`. |
+| Target role is already `in-progress` in another session | Explain that the role is currently claimed, then offer only wait, explicit takeover, or targeted feedback. |
+| Concurrent issue update changes role status during claim | Re-read the issue file, show the refreshed role-status table, and ask the user which remaining role to run now. |
 | Stage cannot advance yet | Explain which earlier approval or unfinished work is still blocking the next stage. |
 | Agent call fails | Report the failure, record it in the issue file, and ask the user how to proceed. |

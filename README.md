@@ -264,14 +264,14 @@ In Terminal 1:
 /run-team
 ```
 
-Choose `continue an existing issue` when you want to resume approved work in that session.
+Choose `continue an existing issue`, open the same implementation-stage issue, and claim `rd-1` if the stage shows `rd-1: pending` and `rd-2: pending`.
 
 In Terminal 2:
 ```bash
 /run-team
 ```
 
-Select the same issue and continue the currently valid stage. Role dispatch comes from the issue state, not from command-line role arguments.
+Select the same issue. The second CLI re-reads the issue, sees the current role-status table, and can claim `rd-2` while `rd-1` is already `in-progress` or `done`. QA is not offered until every role assigned to the implementation stage is `done` and the user approves moving forward.
 
 ## Preset Templates
 
@@ -303,11 +303,11 @@ Any abbreviation not listed above is treated as a custom role — AI generates a
 | Command | Guided flow |
 |---------|-------------|
 | `/init-team` | Choose language, team shape, project name, and role customization settings |
-| `/run-team` | Choose language, new task vs existing issue, then the next valid stage action |
+| `/run-team` | Choose language, new task vs existing issue, then the next valid stage or role action |
 | `/update-team` | Choose language, edit the active team through add/remove/review, then confirm changes |
 
 These commands are interactive-only. Legacy argument-based forms are deprecated and should be rerun as bare commands.
-The flow is stage-gated, so `/run-team` only surfaces the next valid action for the current issue state.
+The flow is stage-gated, so `/run-team` only surfaces the next valid stage or role action for the current issue state.
 
 ## How It Works
 
@@ -321,10 +321,11 @@ The flow is stage-gated, so `/run-team` only surfaces the next valid action for 
 In Claude Code and OpenAI Codex CLI, **run-team** reads these files and runs the current stage either in-session or through the platform's agent/subagent mechanism:
 1. Reads the relevant prompts, profiles, and collaboration guidelines
 2. Either creates an issue for a new task or resumes an existing issue through the guided flow
-3. Dispatches only the current stage with full context
-4. The active role works, writes its worklog entry to the issue directory, and **updates its own capability profile** (new skills, growth areas, learning log)
-5. Pauses after each stage and waits for your explicit confirmation before moving on
-6. Continues through PM requirement intake, architect planning and assignment, implementation, QA review, architect final technical review, and PM final acceptance
+3. Tracks each assigned role inside the current stage as `pending`, `in-progress`, or `done`
+4. Claims only the selected role or roles for the current run, writes their worklogs to the issue directory, and **updates each active role's capability profile** (new skills, growth areas, learning log)
+5. Keeps the workflow in the current stage until every assigned role for that stage is `done`
+6. Enters the stage gate only after the whole stage is complete, then waits for your explicit confirmation before moving on
+7. Continues through PM requirement intake, architect planning and assignment, implementation, QA review, architect final technical review, and PM final acceptance
 
 `run-team` blocks if the active team does not contain at least one PM, at least one architect, at least one development role, and at least one QA role. In that case, use `/update-team` first.
 
