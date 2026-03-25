@@ -25,11 +25,7 @@ If the user supplies any legacy arguments, flags, or inline role changes, stop i
 
 ### Deprecated Legacy Forms
 
-Treat all non-bare forms as deprecated, including examples such as:
-
-- `/update-team add rd`
-- `/update-team remove qa`
-- `/update-team --lang zh`
+Treat any non-bare form that includes inline actions, role edits, or language flags as deprecated.
 
 Do not parse these as partial input or prefilled defaults. Show migration guidance and wait for the user to rerun `/update-team`.
 
