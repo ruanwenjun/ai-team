@@ -16,11 +16,12 @@
 
 AI Team provides three skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) and Codex CLI that help you initialize, run, and update multi-agent teams. Each agent gets its own role, system prompt, capability profile, and working directory so the team can collaborate on your project like a real development group.
 
-**Platform-agnostic** — the generated prompts and docs work with any AI agent tool.
+The generated prompts and docs are reusable across AI agent tools. The interactive `run-team` workflow itself still depends on Claude Code's Agent tool for subagent dispatch; on other platforms, use the generated prompts directly and coordinate manually through the `.ai-team/project/issues/` files.
 
 ## Features
 
-- **Guided lifecycle commands** — interactive-only `init-team`, `run-team`, and `update-team`
+- **Guided lifecycle commands** — interactive-only `init-team`, `run-team`, and `update-team` that advance one stage at a time
+- **Reusable prompts and docs** — generated markdown assets can be reused in other AI agent tools
 - **Role-specific system prompts** — each agent knows its identity, responsibilities, and how to collaborate
 - **Self-learning agents** — each agent updates its capability profile after every work stage, tracking new skills and growth
 - **Structured collaboration** — file-based communication, issue tracking, decision records
@@ -119,7 +120,7 @@ Restart Codex after installation so it can pick up the new skills.
 
 ### Other AI Agent Tools
 
-AI Team generates **platform-agnostic markdown files**. You can use the generated prompts with any AI agent tool:
+AI Team generates reusable markdown files. You can use the generated prompts with any AI agent tool:
 
 1. Run `/init-team` in Claude Code (or manually create the `.ai-team/` directory structure)
 2. Copy the system prompt from `.ai-team/prompts/{role-id}.md`
@@ -139,7 +140,7 @@ The `run-team` skill requires Claude Code's Agent tool for subagent dispatch. Fo
 
 ## Quick Start
 
-All lifecycle commands are interactive-only:
+All lifecycle commands are interactive-only and stage-gated:
 
 ```bash
 /init-team
@@ -302,6 +303,7 @@ Any abbreviation not listed above is treated as a custom role — AI generates a
 | `/update-team` | Choose language, edit the active team through add/remove/review, then confirm changes |
 
 These commands are interactive-only. Legacy argument-based forms are deprecated and should be rerun as bare commands.
+The flow is stage-gated, so `/run-team` only surfaces the next valid action for the current issue state.
 
 ## How It Works
 
@@ -312,7 +314,7 @@ These commands are interactive-only. Legacy argument-based forms are deprecated 
 
 `init-team` always asks for language first, then walks through template or custom composition selection, project naming, optional role customization, and final confirmation.
 
-**run-team** reads these files and launches agents:
+In Claude Code, **run-team** reads these files and launches agents via the Agent tool:
 1. Reads the relevant prompts, profiles, and collaboration guidelines
 2. Either creates an issue for a new task or resumes an existing issue through the guided flow
 3. Dispatches only the current stage with full context

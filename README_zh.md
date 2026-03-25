@@ -16,11 +16,12 @@
 
 AI Team 为 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 和 Codex CLI 提供三个 skill，帮助你初始化、运行和更新多智能体团队。每个智能体拥有独立的角色、系统提示词、能力档案和工作目录，像真实开发团队一样协作完成项目。
 
-**平台无关** — 生成的提示词和文档可用于任何 AI 智能体工具。
+生成的提示词和文档可以在不同 AI 智能体工具之间复用。交互式的 `run-team` 工作流本身仍然依赖 Claude Code 的 Agent 工具来分派子智能体；在其他平台上，请直接使用生成的提示词，并通过 `.ai-team/project/issues/` 文件手动协调任务。
 
 ## 特性
 
-- **引导式生命周期命令** — 交互式 `init-team`、`run-team`、`update-team`
+- **引导式生命周期命令** — 交互式 `init-team`、`run-team`、`update-team`，按阶段逐步推进
+- **可复用的提示词与文档** — 生成的 Markdown 资产可在其他 AI 智能体工具中复用
 - **角色专属提示词** — 每个智能体清楚自己的身份、职责和协作方式
 - **自我学习** — 每个智能体在每轮工作后自动更新能力档案，记录新技能和成长
 - **结构化协作** — 基于文件的沟通、Issue 跟踪、决策记录
@@ -119,7 +120,7 @@ ln -s ~/ai-team/skills/codex/update-team ~/.codex/skills/update-team
 
 ### 其他 AI 智能体工具
 
-AI Team 生成的是**平台无关的 Markdown 文件**，你可以在任何 AI 工具中使用生成的提示词：
+AI Team 生成的是可复用的 Markdown 文件，你可以在任何 AI 工具中使用生成的提示词：
 
 1. 在 Claude Code 中运行 `/init-team`（或手动创建 `.ai-team/` 目录结构）
 2. 复制 `.ai-team/prompts/{角色编号}.md` 中的系统提示词
@@ -139,7 +140,7 @@ AI Team 生成的是**平台无关的 Markdown 文件**，你可以在任何 AI 
 
 ## 快速开始
 
-所有生命周期命令现在都是交互式的：
+所有生命周期命令现在都是交互式的，并按阶段门控推进：
 
 ```bash
 /init-team
@@ -302,6 +303,7 @@ Issue 标记为完成。
 | `/update-team` | 选择语言，通过 add/remove/review 循环调整团队，并最终确认 |
 
 这些命令都是交互式的。旧的参数式写法已废弃，应改为重新运行裸命令。
+整个流程按阶段门控推进，因此 `/run-team` 只会根据当前 Issue 状态展示下一步合法动作。
 
 ## 工作原理
 
@@ -312,7 +314,7 @@ Issue 标记为完成。
 
 `init-team` 现在总是先询问语言，再进入模板或自定义组合、项目命名、可选角色自定义和最终确认。
 
-**run-team** 读取这些文件并启动智能体：
+在 Claude Code 中，**run-team** 会通过 Agent 工具读取这些文件并启动智能体：
 1. 读取相关智能体的提示词、档案和协作规范
 2. 通过引导流程为新任务创建 Issue，或继续已有 Issue
 3. 只启动当前阶段所需的角色，并注入完整上下文
