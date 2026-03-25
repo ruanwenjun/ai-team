@@ -14,17 +14,18 @@
 
 ---
 
-AI Team provides two skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) that help you quickly set up and manage multi-agent teams. Each agent gets its own role, system prompt, capability profile, and working directory — so they can collaborate on your project like a real development team.
+AI Team provides three skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) and Codex CLI that help you initialize, run, and update multi-agent teams. Each agent gets its own role, system prompt, capability profile, and working directory so the team can collaborate on your project like a real development group.
 
 **Platform-agnostic** — the generated prompts and docs work with any AI agent tool.
 
 ## Features
 
-- **One-command team setup** — preset templates or custom role combinations
+- **Guided lifecycle commands** — interactive-only `init-team`, `run-team`, and `update-team`
 - **Role-specific system prompts** — each agent knows its identity, responsibilities, and how to collaborate
 - **Self-learning agents** — each agent updates its capability profile after every work stage, tracking new skills and growth
 - **Structured collaboration** — file-based communication, issue tracking, decision records
 - **Approval-gated task workflow** — plan, implement, review, and accept one stage at a time
+- **Safe team maintenance** — archive removed roles, refresh active prompts and profiles, and preserve issue history
 - **Multi-session support** — run agents in one session or across multiple terminals
 
 ## Installation
@@ -41,6 +42,7 @@ git clone https://github.com/ruanwenjun/ai-team.git /tmp/ai-team
 mkdir -p .claude/skills
 cp -r /tmp/ai-team/skills/claude-code/init-team .claude/skills/init-team
 cp -r /tmp/ai-team/skills/claude-code/run-team .claude/skills/run-team
+cp -r /tmp/ai-team/skills/claude-code/update-team .claude/skills/update-team
 ```
 
 Claude Code auto-discovers skills in `.claude/skills/` — no configuration needed.
@@ -54,6 +56,7 @@ git clone https://github.com/ruanwenjun/ai-team.git /tmp/ai-team
 mkdir -p ~/.claude/skills
 cp -r /tmp/ai-team/skills/claude-code/init-team ~/.claude/skills/init-team
 cp -r /tmp/ai-team/skills/claude-code/run-team ~/.claude/skills/run-team
+cp -r /tmp/ai-team/skills/claude-code/update-team ~/.claude/skills/update-team
 ```
 
 **Option C: Symlink (easy updates via git pull)**
@@ -66,6 +69,7 @@ git clone https://github.com/ruanwenjun/ai-team.git ~/ai-team
 mkdir -p ~/.claude/skills
 ln -s ~/ai-team/skills/claude-code/init-team ~/.claude/skills/init-team
 ln -s ~/ai-team/skills/claude-code/run-team ~/.claude/skills/run-team
+ln -s ~/ai-team/skills/claude-code/update-team ~/.claude/skills/update-team
 ```
 
 After installation, verify skills are available:
@@ -74,7 +78,7 @@ After installation, verify skills are available:
 3. Then run:
 
 ```bash
-/init-team web-standard
+/init-team
 ```
 
 If you still see `Unrecognized command '/init-team'`, it usually means:
@@ -92,9 +96,10 @@ git clone https://github.com/ruanwenjun/ai-team.git /tmp/ai-team
 # Create the Codex skills directory
 mkdir -p ~/.codex/skills
 
-# Install both skills
+# Install all three skills
 cp -r /tmp/ai-team/skills/codex/init-team ~/.codex/skills/init-team
 cp -r /tmp/ai-team/skills/codex/run-team ~/.codex/skills/run-team
+cp -r /tmp/ai-team/skills/codex/update-team ~/.codex/skills/update-team
 ```
 
 **Optional: use symlinks for easier updates via `git pull`**
@@ -107,6 +112,7 @@ git clone https://github.com/ruanwenjun/ai-team.git ~/ai-team
 mkdir -p ~/.codex/skills
 ln -s ~/ai-team/skills/codex/init-team ~/.codex/skills/init-team
 ln -s ~/ai-team/skills/codex/run-team ~/.codex/skills/run-team
+ln -s ~/ai-team/skills/codex/update-team ~/.codex/skills/update-team
 ```
 
 Restart Codex after installation so it can pick up the new skills.
@@ -133,20 +139,21 @@ The `run-team` skill requires Claude Code's Agent tool for subagent dispatch. Fo
 
 ## Quick Start
 
-### Initialize a Team
+All lifecycle commands are interactive-only:
 
 ```bash
-# Use a preset template
-/init-team web-standard
-
-# Custom combination
-/init-team 1pm,1architect,2rd,1qa --name my-project
-
-# Interactive mode (guided setup)
 /init-team
+/run-team
+/update-team
 ```
 
-This creates a `.ai-team/` directory in your project:
+- `/init-team` asks for language, template or custom composition, project name, and whether to customize role descriptions.
+- `/run-team` asks whether to start a new task or continue an existing issue, then offers only the next valid stage actions.
+- `/update-team` asks how to add or remove members, previews the resulting team and archive changes, and applies updates only after confirmation.
+
+Legacy argument-based forms are deprecated. If you used the previous command styles, rerun the bare command and provide the same information through the guided prompts.
+
+`/init-team` creates a `.ai-team/` directory in your project:
 
 ```
 .ai-team/
@@ -158,6 +165,8 @@ This creates a `.ai-team/` directory in your project:
 │   ├── requirements/       # Requirements docs
 │   ├── decisions/          # Architecture Decision Records
 │   └── changelog.md
+├── archive/
+│   └── roles/              # Removed roles preserved here by update-team
 ├── profiles/               # Each agent's skills & growth
 │   ├── pm.md
 │   ├── architect.md
@@ -175,29 +184,16 @@ This creates a `.ai-team/` directory in your project:
     └── ...
 ```
 
-### Run Your Team
-
-```bash
-# Assign a task to the architect-led delivery chain
-/run-team pm,architect --task "implement user authentication"
-
-# Run all team members
-/run-team all --task "set up the project structure"
-
-# Continue an existing issue
-/run-team rd-1 --issue 001
-```
-
 ## Demo
 
 ### Example 1: Standard Web Project
 
 ```bash
 # Step 1: Initialize a web team
-/init-team web-standard --name my-web-app
+/init-team
 ```
 
-This creates a team with 1 PM, 1 Architect, 2 Developers (rd-1, rd-2), and 1 QA Engineer:
+Choose `web-standard`, set the project name to `my-web-app`, pick a language, and confirm the preview. This creates a team with 1 PM, 1 Architect, 2 Developers (rd-1, rd-2), and 1 QA Engineer:
 
 ```
 Generated .ai-team/ with 22 files:
@@ -209,11 +205,13 @@ Generated .ai-team/ with 22 files:
 ```
 
 ```bash
-# Step 2: Assign a task
-/run-team all --task "implement user login with JWT authentication"
+# Step 2: Start a new task
+/run-team
 ```
 
-The skill now runs as a gated sequence:
+Choose a language, select `start a new task`, and enter `implement user login with JWT authentication`.
+
+The skill then runs as a gated sequence:
 1. Creates issue `001-implement-user-login.md`
 2. Launches PM to capture and clarify the requirement
 3. Pauses for your confirmation before architect planning starts
@@ -241,29 +239,34 @@ After you confirm, the workflow continues with architect planning, implementatio
 
 Issue marked as done.
 
-### Example 2: Full-Stack with Custom Roles
+### Example 2: Updating an Active Team
 
 ```bash
-/init-team 1pm,1architect,1fe,1be,1qa,1devops --name saas-platform
+/update-team
 ```
 
-Creates 6 agents. The `devops` role isn't built-in, so AI Team intelligently generates DevOps-appropriate content (CI/CD, infrastructure, monitoring responsibilities).
+Use the action loop to add members, remove members, and finish with a preview before applying:
+
+- removed roles are archived under `.ai-team/archive/roles/{id}/`
+- active prompts and profiles are fully regenerated after confirmation
+- role IDs are never reused, so a removed `rd-2` becomes `rd-3` if that role type is added again later
+- unfinished issues can block removals until work is reassigned or completed
 
 ### Example 3: Multi-Session Mode
 
 In Terminal 1:
 ```bash
-/run-team pm --task "implement payment service"
-# Creates issue #002 and records the requirement
+/run-team
 ```
+
+Choose `continue an existing issue` when you want to resume approved work in that session.
 
 In Terminal 2:
 ```bash
-/run-team architect --issue 002
-# Architect picks up the approved issue, decomposes it, and assigns implementation/QA
+/run-team
 ```
 
-After user approval, later terminals continue with `/run-team rd-1 --issue 002`, `/run-team qa --issue 002`, and the final architect/PM review stages through the same shared `.ai-team/` directory.
+Select the same issue and continue the currently valid stage. Role dispatch comes from the issue state, not from command-line role arguments.
 
 ## Preset Templates
 
@@ -290,14 +293,15 @@ After user approval, later terminals continue with `/run-team rd-1 --issue 002`,
 
 Any abbreviation not listed above is treated as a custom role — AI generates appropriate content automatically.
 
-## Options
+## Command Model
 
-| Flag | Description | Default |
-|------|------------|---------|
-| `--name` | Project name in generated docs | Current directory name |
-| `--lang {zh|en}` | Language for the current `init-team` or `run-team` invocation; if omitted, the skill asks and recommends a default from the current input language | Ask each run |
-| `--task` | Task description for `run-team` | (required) |
-| `--issue` | Resume an existing issue number | (creates new) |
+| Command | Guided flow |
+|---------|-------------|
+| `/init-team` | Choose language, team shape, project name, and role customization settings |
+| `/run-team` | Choose language, new task vs existing issue, then the next valid stage action |
+| `/update-team` | Choose language, edit the active team through add/remove/review, then confirm changes |
+
+These commands are interactive-only. Legacy argument-based forms are deprecated and should be rerun as bare commands.
 
 ## How It Works
 
@@ -306,17 +310,23 @@ Any abbreviation not listed above is treated as a custom role — AI generates a
 - A **capability profile** tracking skills and growth, with a learning log
 - A **worklog directory** for recording progress
 
-Before generation starts, `init-team` resolves a language preference. If `--lang` is missing, it asks each time and recommends English or Chinese based on the current input language.
+`init-team` always asks for language first, then walks through template or custom composition selection, project naming, optional role customization, and final confirmation.
 
 **run-team** reads these files and launches agents:
 1. Reads the relevant prompts, profiles, and collaboration guidelines
-2. Creates an issue to track the task
-3. Dispatches the current stage with full context
+2. Either creates an issue for a new task or resumes an existing issue through the guided flow
+3. Dispatches only the current stage with full context
 4. The active role works, writes its worklog, and **updates its own capability profile** (new skills, growth areas, learning log)
 5. Pauses after each stage and waits for your explicit confirmation before moving on
 6. Continues through PM requirement intake, architect planning and assignment, implementation, QA review, architect final technical review, and PM final acceptance
 
-Before the first stage starts, `run-team` also resolves a language preference. If `--lang` is missing, it asks each time and recommends English or Chinese based on the current input language. For `--issue`, the selected language affects only newly appended content in that invocation.
+`run-team` blocks if the active team does not contain at least one PM, at least one architect, at least one development role, and at least one QA role. In that case, use `/update-team` first.
+
+**update-team** safely changes an existing team without rewriting issue history:
+- archives removed roles under `.ai-team/archive/roles/{id}/`
+- regenerates prompts and profiles for every active role after confirmation
+- appends a team update entry to `.ai-team/project/changelog.md`
+- preserves historical references because role IDs are never reused
 
 Agents communicate through files — issues, worklogs, and `@{role-id}` mentions in documents.
 
