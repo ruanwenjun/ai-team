@@ -18,10 +18,27 @@ AI Team provides three skills for [Claude Code](https://docs.anthropic.com/en/do
 
 The generated prompts and docs are reusable across AI agent tools. The interactive `run-team` workflow itself still depends on Claude Code's Agent tool for subagent dispatch; on other platforms, use the generated prompts directly and coordinate manually through the `.ai-team/project/issues/` files.
 
+## Optional External Superpowers Usage
+
+AI Team can use external Superpowers skills on both Codex and Claude Code when the current platform exposes them.
+
+- If the relevant external skill is available, the matching role should use it
+- If the external skill is not available, AI Team continues its normal workflow
+- AI Team does not generate or simulate a local Superpowers replacement
+
+Default role mapping when external skills are available:
+
+- PM -> `brainstorming`
+- Architect -> `writing-plans`
+- Developers (`rd`, `fe`, `be`) -> `test-driven-development`
+- QA -> testing plus `verification-before-completion`
+- Bug, regression, and production-issue work -> developers use `systematic-debugging` before TDD
+
 ## Features
 
 - **Guided lifecycle commands** — interactive-only `init-team`, `run-team`, and `update-team` that advance one stage at a time
 - **Reusable prompts and docs** — generated markdown assets can be reused in other AI agent tools
+- **Optional external Superpowers support** — use external brainstorming, planning, TDD, debugging, and verification skills only when they are available
 - **Role-specific system prompts** — each agent knows its identity, responsibilities, and how to collaborate
 - **Self-learning agents** — each agent updates its capability profile after every work stage, tracking new skills and growth
 - **Structured collaboration** — file-based communication, issue tracking, decision records
@@ -197,7 +214,7 @@ Legacy argument-based forms are deprecated. If you used the previous command sty
 Choose `web-standard`, set the project name to `my-web-app`, pick a language, and confirm the preview. This creates a team with 1 PM, 1 Architect, 2 Developers (rd-1, rd-2), and 1 QA Engineer:
 
 ```
-Generated .ai-team/ with 22 files:
+Generated .ai-team/ with key files including:
   team.md, collaboration.md
   profiles/pm.md, profiles/architect.md, profiles/rd-1.md, profiles/rd-2.md, profiles/qa.md
   prompts/pm.md, prompts/architect.md, prompts/rd-1.md, prompts/rd-2.md, prompts/qa.md
@@ -214,9 +231,9 @@ Choose a language, select `start a new task`, and enter `implement user login wi
 
 The skill then runs as a gated sequence:
 1. Creates issue `001-implement-user-login.md`
-2. Launches PM to capture and clarify the requirement
+2. Launches PM to capture and clarify the requirement, optionally using external `brainstorming` when available
 3. Pauses for your confirmation before architect planning starts
-4. Launches architect to decompose the work and assign rd-1 plus QA
+4. Launches architect to decompose the work and assign rd-1 plus QA, optionally using external `writing-plans` when available
 5. Pauses for your confirmation before implementation starts
 
 ```
@@ -231,7 +248,7 @@ Awaiting your confirmation to start architect planning.
 > proceed
 ```
 
-After you confirm, the workflow continues with architect planning, implementation, QA review, final technical review from architect, and PM acceptance, pausing between each stage.
+After you confirm, the workflow continues with architect planning, implementation, QA review, final technical review from architect, and PM acceptance. When the relevant external Superpowers skill is available, that role uses it for the stage.
 
 ```bash
 # Step 4: Final acceptance

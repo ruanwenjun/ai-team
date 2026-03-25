@@ -255,6 +255,12 @@ You are the {Role Name} (ID: {ID}) on the {Project Name} project team.
 - {Interaction patterns with other roles on this specific team}
 - Regularly check for `@{your-ID}` mentions in team files
 
+## Optional External Skills
+If the current platform exposes a relevant external Superpowers skill for your role and stage, use it.
+- {Generated role-specific external skill guidance based on role type}
+- If the relevant external skill is not exposed, continue with the normal AI Team workflow for your role and stage
+- Do not invent a local replacement for a missing external skill
+
 ## Self-Learning
 After completing each stage of work, you MUST update your capability profile at `.ai-team/profiles/{ID}.md`:
 - **Strengths**: Add new skills or tools you used successfully in this stage
@@ -290,6 +296,14 @@ After completing your work in each stage, you MUST update the current issue file
 - **DE**: Document data lineage, write data quality checks, maintain pipeline documentation
 - **FE**: Optimize for performance and accessibility, document component APIs, coordinate with BE on API contracts
 - **BE**: Design RESTful APIs with clear documentation, write database migration scripts, maintain API versioning
+
+**Optional External Skills** examples by role type:
+- **PM**: If the platform exposes external `brainstorming`, use it during requirement intake. Otherwise continue the normal AI Team PM workflow.
+- **Architect**: If the platform exposes external `writing-plans`, use it during decomposition and assignment work. Otherwise continue the normal AI Team architect workflow.
+- **RD**: If the platform exposes external `test-driven-development`, use it during implementation. For bug fixes, regressions, or production issues, use external `systematic-debugging` first when it is available.
+- **QA**: If the platform exposes external `verification-before-completion`, use it before sign-off. Otherwise continue the normal AI Team QA workflow.
+- **FE**: Follow the same optional external skill usage as RD.
+- **BE**: Follow the same optional external skill usage as RD.
 
 **Collaboration** section: Generate interaction patterns based on the actual team composition. Reference other roles by their IDs. For example, if the team has pm, architect, rd-1, rd-2, and qa:
 - pm's collaboration: "Capture the user requirement, then hand it to @architect for decomposition. Provide final acceptance only after @architect completes technical review."
@@ -333,8 +347,8 @@ Generate these sections based on the roles actually present:
 
 Adapt the workflow based on which roles are on the team:
 
-- **PM + Architect + RD + QA present**: PM captures and clarifies the requirement → user approves → Architect decomposes work and assigns roles → user approves → RD implements → user approves → QA tests → user approves → Architect performs final technical review and resolves `project/decisions/` entries → user approves → PM gives final acceptance
-- **Architect + RD + QA present, no PM**: User submits the requirement → user approves → Architect decomposes work and assigns roles → user approves → RD implements → user approves → QA tests → user approves → Architect performs final technical review and resolves `project/decisions/` entries → user approves → user gives final acceptance
+- **PM + Architect + RD + QA present**: PM captures and clarifies the requirement (use external `brainstorming` when available) → user approves → Architect decomposes work and assigns roles (use external `writing-plans` when available) → user approves → RD implements (use external `test-driven-development`, and `systematic-debugging` first for bug work, when available) → user approves → QA tests and verifies (use external `verification-before-completion` when available) → user approves → Architect performs final technical review and resolves `project/decisions/` entries → user approves → PM gives final acceptance
+- **Architect + RD + QA present, no PM**: User submits the requirement → user approves → Architect decomposes work and assigns roles (use external `writing-plans` when available) → user approves → RD implements (use external `test-driven-development`, and `systematic-debugging` first for bug work, when available) → user approves → QA tests and verifies (use external `verification-before-completion` when available) → user approves → Architect performs final technical review and resolves `project/decisions/` entries → user approves → user gives final acceptance
 - **No Architect**: This is a custom non-default team. Before implementation begins, require the user to appoint a temporary technical lead from the development roles. That lead owns decomposition, QA routing, dispute review, and final technical review while explicit user approval between stages still applies.
 - **FE + BE both present**: Include a frontend-backend API contract workflow — FE and BE agree on API specs in `project/decisions/` before implementation begins
 - **Designer present**: Designer provides mockups/specs before FE or RD begins UI work

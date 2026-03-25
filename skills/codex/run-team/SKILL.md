@@ -9,6 +9,8 @@ description: Use when launching AI team members to work on tasks, guiding issue-
 
 Launch team members through a guided, issue-driven workflow. This skill creates or resumes issues, dispatches only the roles needed for the current stage, and keeps user approval gates between PM intake, architect planning, implementation, QA, architect final review, and PM acceptance.
 
+When the current platform exposes relevant external Superpowers skills, roles may use them as an enhancement to the existing AI Team stage workflow. If those external skills are unavailable, continue the normal AI Team workflow and do not simulate a local fallback.
+
 **Prerequisite:** `.ai-team/` directory must exist (created by `init-team`).
 
 **Interactive-only:** This skill accepts only the bare command `/run-team`.
@@ -96,6 +98,25 @@ The documented workflow is always:
 Each handoff requires explicit user approval before the next stage starts. If the user asks for changes, relaunch only the role(s) in the current stage or the specific stage being revised.
 
 If architect assigns multiple developers in the implementation stage, they all work within the same gated stage. QA cannot begin until every assigned developer has completed their work and the user explicitly approves moving forward.
+
+### Optional External Superpowers Usage
+
+When the current platform exposes the relevant external Superpowers skill, roles should use it for the matching stage:
+
+- PM requirement intake -> `brainstorming`
+- Architect planning -> `writing-plans`
+- Implementation -> `test-driven-development`
+- QA sign-off -> `verification-before-completion`
+
+If the skill is not exposed, continue the normal AI Team stage workflow. Do not invent a local replacement.
+
+### Bug-Oriented Implementation Rule
+
+If the task, stage feedback, or issue history shows the implementation stage is addressing a bug, regression, or production issue:
+
+- the assigned developer roles should use external `systematic-debugging` before implementation when that skill is available
+- the debugging evidence should be summarized in the issue and worklog before the implementation summary
+- if `systematic-debugging` is unavailable, continue the normal AI Team debugging and implementation flow
 
 ---
 
@@ -202,6 +223,8 @@ Execute these steps in order:
    - Assemble the full context and launch the agent as a subagent.
 6. **Agent execution:**
    - Each agent executes the task from its role perspective.
+   - If the platform exposes the relevant external Superpowers skill for the current stage, the agent should use it.
+   - If the skill is not exposed, the agent should continue the normal AI Team stage workflow without inventing a local fallback.
    - Each agent writes a worklog entry to `.ai-team/worklog/{id}/`.
    - Each agent updates the current issue file by appending work summary and listing all files created or modified under the current stage's Progress section.
    - Each agent updates its own profile at `.ai-team/profiles/{id}.md`.

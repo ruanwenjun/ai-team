@@ -18,10 +18,27 @@ AI Team 为 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 和 Co
 
 生成的提示词和文档可以在不同 AI 智能体工具之间复用。交互式的 `run-team` 工作流本身仍然依赖 Claude Code 的 Agent 工具来分派子智能体；在其他平台上，请直接使用生成的提示词，并通过 `.ai-team/project/issues/` 文件手动协调任务。
 
+## 可选的外部 Superpowers 支持
+
+AI Team 可以在 Codex 和 Claude Code 两端使用外部 Superpowers skill，但前提是当前平台真的暴露了这些 skill。
+
+- 如果相关外部 skill 可用，对应角色就使用它
+- 如果外部 skill 不可用，AI Team 继续按原本流程运行
+- AI Team 不会生成或模拟一套本地 Superpowers 替代品
+
+当外部 skill 可用时，默认角色映射如下：
+
+- PM -> `brainstorming`
+- Architect -> `writing-plans`
+- 开发角色（`rd`、`fe`、`be`）-> `test-driven-development`
+- QA -> 测试执行 + `verification-before-completion`
+- bug、回归和线上问题任务 -> 开发角色先 `systematic-debugging`，再进入 TDD
+
 ## 特性
 
 - **引导式生命周期命令** — 交互式 `init-team`、`run-team`、`update-team`，按阶段逐步推进
 - **可复用的提示词与文档** — 生成的 Markdown 资产可在其他 AI 智能体工具中复用
+- **可选的外部 Superpowers 支持** — 只有在外部 skill 可用时，才使用 brainstorming、planning、TDD、debugging 和 verification
 - **角色专属提示词** — 每个智能体清楚自己的身份、职责和协作方式
 - **自我学习** — 每个智能体在每轮工作后自动更新能力档案，记录新技能和成长
 - **结构化协作** — 基于文件的沟通、Issue 跟踪、决策记录
@@ -197,7 +214,7 @@ AI Team 生成的是可复用的 Markdown 文件，你可以在任何 AI 工具�
 选择 `web-standard`，把项目名设为 `my-web-app`，选择语言并确认预览。这样会创建一个包含 1 个 PM、1 个架构师、2 个开发（rd-1, rd-2）和 1 个 QA 的团队：
 
 ```
-已生成 .ai-team/，共 22 个文件：
+已生成 .ai-team/，关键文件包括：
   team.md, collaboration.md
   profiles/pm.md, profiles/architect.md, profiles/rd-1.md, profiles/rd-2.md, profiles/qa.md
   prompts/pm.md, prompts/architect.md, prompts/rd-1.md, prompts/rd-2.md, prompts/qa.md
@@ -214,9 +231,9 @@ AI Team 生成的是可复用的 Markdown 文件，你可以在任何 AI 工具�
 
 Skill 会按门控阶段自动执行：
 1. 创建 Issue `001-implement-user-login.md`
-2. 启动 PM，接收并澄清需求
+2. 启动 PM 接收并澄清需求；如果外部 `brainstorming` 可用，则在这一阶段使用它
 3. 在进入架构规划前暂停，等待你的确认
-4. 启动架构师，将工作拆分并分配给 rd-1 和 QA
+4. 启动架构师拆分工作并分配给 rd-1 和 QA；如果外部 `writing-plans` 可用，则在这一阶段使用它
 5. 在进入实现阶段前暂停，等待你的确认
 
 ```
@@ -231,7 +248,7 @@ Skill 会按门控阶段自动执行：
 > proceed
 ```
 
-你确认后，流程会继续进入架构规划、实现、QA 审查、架构师最终技术审查，以及 PM 最终验收，并在每个阶段之间暂停等待确认。
+你确认后，流程会继续进入架构规划、实现、QA 审查、架构师最终技术审查，以及 PM 最终验收。如果当前阶段对应的外部 Superpowers skill 可用，就在该阶段使用它。
 
 ```bash
 # 第四步：最终验收
