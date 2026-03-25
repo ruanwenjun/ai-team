@@ -16,8 +16,8 @@ Quickly scaffold a complete AI agent team with role-specific prompts, capability
 ### Command Mode
 
 - Preset template: `/init-team web-standard`
-- Custom combination: `/init-team 2rd,1qa,1pm`
-- With options: `/init-team 2rd,1qa --name my-project --lang zh`
+- Custom combination: `/init-team 1pm,1architect,2rd,1qa`
+- With options: `/init-team 1pm,1architect,2rd,1qa --name my-project --lang zh`
 
 ### Interactive Mode
 
@@ -26,8 +26,8 @@ When invoked with no arguments (`/init-team`), enter guided setup (see Interacti
 ### Argument Format
 
 Custom combinations use `{count}{abbreviation}` comma-separated. Examples:
-- `2rd,1qa,1pm` — 2 developers, 1 QA, 1 PM
-- `1fe,1be,1qa` — 1 frontend, 1 backend, 1 QA
+- `1pm,1architect,2rd,1qa` — PM, architect, 2 developers, 1 QA
+- `1architect,1fe,1be,1qa` — architect, 1 frontend, 1 backend, 1 QA
 
 ### Options
 
@@ -52,11 +52,11 @@ Apply these validation rules before generation:
 
 | Template | Composition | Use Case |
 |----------|------------|----------|
-| `web-standard` | 1pm, 2rd, 1qa | Standard web project |
-| `mobile-app` | 1pm, 2rd, 1qa, 1designer | Mobile application |
-| `data-pipeline` | 1pm, 2rd, 1de | Data engineering project |
-| `fullstack` | 1pm, 1fe, 1be, 1qa | Full-stack with frontend/backend split |
-| `minimal` | 1rd, 1qa | Small project / quick validation |
+| `web-standard` | 1pm, 1architect, 2rd, 1qa | Standard web project |
+| `mobile-app` | 1pm, 1architect, 2rd, 1qa, 1designer | Mobile application |
+| `data-pipeline` | 1pm, 1architect, 2rd, 1de | Data engineering project |
+| `fullstack` | 1pm, 1architect, 1fe, 1be, 1qa | Full-stack with frontend/backend split |
+| `minimal` | 1pm, 1architect, 1rd, 1qa | Small project / quick validation |
 
 ---
 
@@ -64,8 +64,9 @@ Apply these validation rules before generation:
 
 | Abbr | Role | Core Responsibilities |
 |------|------|----------------------|
-| `pm` | Project Manager | Requirements management, progress tracking, task decomposition, coordination |
-| `rd` | Developer | Architecture design, code implementation, code review |
+| `pm` | Project Manager | Requirement intake and clarification, final acceptance |
+| `architect` | Architect | Task decomposition, developer assignment, QA assignment, project README/changelog maintenance, dispute review in `project/decisions/`, final technical review |
+| `rd` | Developer | Code implementation, code review, technical feedback on assigned tasks |
 | `qa` | QA Engineer | Test case design, automated testing, defect tracking |
 | `designer` | Designer | UI/UX design, interaction specs, visual mockups |
 | `de` | Data Engineer | Data pipelines, ETL, data quality |
@@ -107,7 +108,7 @@ Generate the following `.ai-team/` directory structure. Every file listed below 
 
 ### Naming Rules
 
-- **Single role of a type**: use the abbreviation directly with no number — `pm`, `qa`, `designer`
+- **Single role of a type**: use the abbreviation directly with no number — `architect`, `pm`, `qa`, `designer`
 - **Multiple roles of the same type**: append a number — `rd-1`, `rd-2`
 
 ---
@@ -131,6 +132,7 @@ Generate this file at `.ai-team/team.md`:
 | ID | Role | Status | Profile | Prompt | Worklog |
 |----|------|--------|---------|--------|---------|
 | pm | Project Manager | active | [profiles/pm.md](profiles/pm.md) | [prompts/pm.md](prompts/pm.md) | [worklog/pm/](worklog/pm/) |
+| architect | Architect | active | [profiles/architect.md](profiles/architect.md) | [prompts/architect.md](prompts/architect.md) | [worklog/architect/](worklog/architect/) |
 | rd-1 | Developer | active | [profiles/rd-1.md](profiles/rd-1.md) | [prompts/rd-1.md](prompts/rd-1.md) | [worklog/rd-1/](worklog/rd-1/) |
 | rd-2 | Developer | active | [profiles/rd-2.md](profiles/rd-2.md) | [prompts/rd-2.md](prompts/rd-2.md) | [worklog/rd-2/](worklog/rd-2/) |
 | qa | QA Engineer | active | [profiles/qa.md](profiles/qa.md) | [prompts/qa.md](prompts/qa.md) | [worklog/qa/](worklog/qa/) |
@@ -161,7 +163,7 @@ Generate this file at `.ai-team/project/README.md`:
 {To be discussed and documented by the team}
 
 ## Milestones
-{To be planned by PM}
+{To be planned by architect}
 ```
 
 ### project/changelog.md
@@ -217,7 +219,7 @@ Generate one profile per team member at `.ai-team/profiles/{id}.md`:
 
 Generate intelligent, role-appropriate content for each section. For custom roles, infer appropriate content from the role name.
 
-**Note:** The Learning Log table and all profile sections are updated by the agent after each work round (see Self-Learning in the prompt template).
+**Note:** The Learning Log table and all profile sections are updated by the agent after each work stage (see Self-Learning in the prompt template).
 
 ### prompts/{id}.md
 
@@ -246,8 +248,8 @@ You are the {Role Name} (ID: {ID}) on the {Project Name} project team.
 - Regularly check for `@{your-ID}` mentions in team files
 
 ## Self-Learning
-After completing each round of work, you MUST update your capability profile at `.ai-team/profiles/{ID}.md`:
-- **Strengths**: Add new skills or tools you used successfully in this round
+After completing each stage of work, you MUST update your capability profile at `.ai-team/profiles/{ID}.md`:
+- **Strengths**: Add new skills or tools you used successfully in this stage
 - **Areas to Develop**: Update based on challenges you encountered
 - **Growth Direction**: Adjust based on what you learned
 - **Work Preferences**: Record any effective patterns or approaches you discovered
@@ -255,8 +257,8 @@ After completing each round of work, you MUST update your capability profile at 
 This is not optional. Self-reflection and profile updates are part of your workflow.
 
 ## Issue Update
-After completing your work in each round, you MUST update the current issue file in `.ai-team/project/issues/`:
-- Append your work summary under the current round's Progress section
+After completing your work in each stage, you MUST update the current issue file in `.ai-team/project/issues/`:
+- Append your work summary under the current stage's Progress section
 - List all files you created or modified with their paths
 - Example:
   ```
@@ -272,7 +274,8 @@ After completing your work in each round, you MUST update the current issue file
 ```
 
 **Behavioral Guidelines** examples by role type:
-- **PM**: Break down requirements into actionable issues, track progress in issue files, coordinate cross-role dependencies. For complex features, write detailed requirement docs in `project/requirements/` before splitting into issues
+- **PM**: Capture and clarify user requirements, document scope decisions, and provide final acceptance only after architect review
+- **Architect**: Break down requirements into implementation-ready tasks, assign developers and QA, maintain `project/README.md` and `project/changelog.md`, review disputes in `project/decisions/`, and perform final technical review
 - **RD**: Write clear commit messages, document architectural decisions in `project/decisions/`, follow code review process
 - **QA**: Document reproduction steps for every defect, write automated test cases, verify fixes before closing issues
 - **Designer**: Provide interaction specs with every mockup, document design rationale, iterate based on feedback
@@ -280,10 +283,11 @@ After completing your work in each round, you MUST update the current issue file
 - **FE**: Optimize for performance and accessibility, document component APIs, coordinate with BE on API contracts
 - **BE**: Design RESTful APIs with clear documentation, write database migration scripts, maintain API versioning
 
-**Collaboration** section: Generate interaction patterns based on the actual team composition. Reference other roles by their IDs. For example, if the team has pm, rd-1, rd-2, and qa:
-- pm's collaboration: "Assign tasks to @rd-1, @rd-2. Request test plans from @qa."
-- rd-1's collaboration: "Submit work for review by @rd-2. Notify @qa when features are ready for testing."
-- qa's collaboration: "Report defects and assign to @rd-1 or @rd-2. Confirm fixes with @pm."
+**Collaboration** section: Generate interaction patterns based on the actual team composition. Reference other roles by their IDs. For example, if the team has pm, architect, rd-1, rd-2, and qa:
+- pm's collaboration: "Capture the user requirement, then hand it to @architect for decomposition. Provide final acceptance only after @architect completes technical review."
+- architect's collaboration: "Decompose the work, assign @rd-1 and @rd-2, route testing to @qa, and review disputes in `project/decisions/` before PM acceptance."
+- rd-1's collaboration: "Implement assigned tasks, submit work for architect review, and notify @qa when features are ready for testing."
+- qa's collaboration: "Report defects to @architect, confirm fixes with the assigned developer, and prepare the final QA summary for architect review."
 
 ---
 
@@ -321,28 +325,30 @@ Generate these sections based on the roles actually present:
 
 Adapt the workflow based on which roles are on the team:
 
-- **PM + RD + QA present**: PM creates issue → RD implements → QA tests → PM reviews → close
-- **PM + RD, no QA**: PM creates issue → RD implements and self-tests → PM reviews → close
-- **No PM (e.g., minimal template)**: RD creates and manages issues directly in `project/issues/`
+- **PM + Architect + RD + QA present**: PM captures and clarifies the requirement → user approves → Architect decomposes work and assigns roles → user approves → RD implements → user approves → QA tests → user approves → Architect performs final technical review and resolves `project/decisions/` entries → user approves → PM gives final acceptance
+- **Architect + RD + QA present, no PM**: User submits the requirement → user approves → Architect decomposes work and assigns roles → user approves → RD implements → user approves → QA tests → user approves → Architect performs final technical review and resolves `project/decisions/` entries → user approves → user gives final acceptance
+- **No Architect**: This is a custom non-default team. Before implementation begins, require the user to appoint a temporary technical lead from the development roles. That lead owns decomposition, QA routing, dispute review, and final technical review while explicit user approval between stages still applies.
 - **FE + BE both present**: Include a frontend-backend API contract workflow — FE and BE agree on API specs in `project/decisions/` before implementation begins
 - **Designer present**: Designer provides mockups/specs before FE or RD begins UI work
+- **Multiple developers assigned in implementation**: Treat them as one gated implementation stage. They may work in parallel, but QA does not start until all assigned developers finish and the user explicitly approves the handoff.
 
 Write the actual workflow section for the specific team — do not list all possibilities.
 
 #### Code Review Process
 
-- **Multiple development roles** (multiple RD, or FE + BE, etc.): Developers review each other's work. Specify the review pairs based on IDs.
-- **Single development role**: Developer performs self-review using a checklist approach.
+- **Multiple development roles** (multiple RD, or FE + BE, etc.): Developers review each other's work. Specify the review pairs based on IDs, then route the final technical review through `@architect` when present.
+- **Single development role**: Developer performs self-review using a checklist approach, then `@architect` performs the final technical review when present.
 
 #### Conflict Resolution
 
-- **PM present**: Technical disagreements are recorded in `project/decisions/` as ADRs. PM coordinates discussion and final decision.
-- **No PM**: Team members discuss together. Any team member can propose a decision; record in `project/decisions/`.
+- **Architect present**: Technical disagreements are recorded in `project/decisions/` as ADRs. Architect coordinates the discussion, captures the decision, and updates project documentation. PM only handles requirement intake and final acceptance when present.
+- **No Architect**: Require the user to appoint a temporary technical lead from the development roles to coordinate technical decisions, record ADRs, route QA, and perform final technical review. PM still only handles requirement intake and final acceptance when present.
 
 #### Role-Specific `@` Mention Instructions
 
 Include in the collaboration doc a section listing each role and what types of mentions they should watch for:
-- Example: "@pm — task status questions, blocking issues, scope clarifications"
+- Example: "@pm — requirement intake, scope clarification, final acceptance"
+- Example: "@architect — decomposition requests, ADR reviews, technical decisions, README/changelog updates"
 - Example: "@rd-1 — code review requests, bug assignments, technical questions"
 - Example: "@qa — test requests, defect confirmations, release sign-off"
 
@@ -353,7 +359,7 @@ Include in the collaboration doc a section listing each role and what types of m
 When invoked with no arguments, follow this guided flow:
 
 1. **Display preset templates**: Show the Preset Team Templates table and ask the user to select one or enter a custom combination.
-2. **User selects**: Accept a template name (e.g., `web-standard`) or a custom combo (e.g., `2rd,1qa`).
+2. **User selects**: Accept a template name (e.g., `web-standard`) or a custom combo (e.g., `1pm,1architect,2rd,1qa`).
 3. **Ask for project name**: Prompt for a project name. Default: current working directory name.
 4. **Ask for language preference**: "Generate documents in English (default) or Chinese?" Default: English.
 5. **Ask about customization**: "Would you like to customize role descriptions?" If yes:

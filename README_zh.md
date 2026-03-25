@@ -24,7 +24,7 @@ AI Team 为 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 提供
 - **角色专属提示词** — 每个智能体清楚自己的身份、职责和协作方式
 - **自我学习** — 每个智能体在每轮工作后自动更新能力档案，记录新技能和成长
 - **结构化协作** — 基于文件的沟通、Issue 跟踪、决策记录
-- **迭代式任务流** — 分配任务、审查结果、反馈修改，循环直到满意
+- **审批门控式任务流** — 按阶段规划、实现、审查与验收
 - **多会话支持** — 在一个会话中运行多个智能体，或在多个终端中分别运行
 
 ## 安装
@@ -140,7 +140,7 @@ AI Team 生成的是**平台无关的 Markdown 文件**，你可以在任何 AI 
 /init-team web-standard
 
 # 自定义组合
-/init-team 2rd,1qa,1pm --name my-project
+/init-team 1pm,1architect,2rd,1qa --name my-project
 
 # 交互模式（引导式设置）
 /init-team
@@ -163,14 +163,17 @@ AI Team 生成的是**平台无关的 Markdown 文件**，你可以在任何 AI 
 │   └── changelog.md
 ├── profiles/               # 每个智能体的能力和成长
 │   ├── pm.md
+│   ├── architect.md
 │   ├── rd-1.md
 │   └── ...
 ├── prompts/                # 系统提示词（可复制到任何平台）
 │   ├── pm.md
+│   ├── architect.md
 │   ├── rd-1.md
 │   └── ...
 └── worklog/                # 每个智能体的工作日志
     ├── pm/
+    ├── architect/
     ├── rd-1/
     └── ...
 ```
@@ -178,8 +181,8 @@ AI Team 生成的是**平台无关的 Markdown 文件**，你可以在任何 AI 
 ### 运行团队
 
 ```bash
-# 给指定角色分配任务
-/run-team rd-1,qa --task "实现用户认证功能"
+# 给需求接收与架构规划链路分配任务
+/run-team pm,architect --task "实现用户认证功能"
 
 # 启动所有团队成员
 /run-team all --task "搭建项目基础架构"
@@ -197,45 +200,45 @@ AI Team 生成的是**平台无关的 Markdown 文件**，你可以在任何 AI 
 /init-team web-standard --name my-web-app --lang zh
 ```
 
-创建一个包含 1 个 PM、2 个开发（rd-1, rd-2）和 1 个 QA 的团队：
+创建一个包含 1 个 PM、1 个架构师、2 个开发（rd-1, rd-2）和 1 个 QA 的团队：
 
 ```
-已生成 .ai-team/，共 19 个文件：
+已生成 .ai-team/，共 22 个文件：
   team.md, collaboration.md
-  profiles/pm.md, profiles/rd-1.md, profiles/rd-2.md, profiles/qa.md
-  prompts/pm.md, prompts/rd-1.md, prompts/rd-2.md, prompts/qa.md
+  profiles/pm.md, profiles/architect.md, profiles/rd-1.md, profiles/rd-2.md, profiles/qa.md
+  prompts/pm.md, prompts/architect.md, prompts/rd-1.md, prompts/rd-2.md, prompts/qa.md
   project/README.md, project/changelog.md
-  worklog/pm/, worklog/rd-1/, worklog/rd-2/, worklog/qa/
+  worklog/pm/, worklog/architect/, worklog/rd-1/, worklog/rd-2/, worklog/qa/
 ```
 
 ```bash
 # 第二步：分配任务
-/run-team rd-1,qa --task "实现 JWT 用户登录功能"
+/run-team all --task "实现 JWT 用户登录功能"
 ```
 
-Skill 会自动：
+Skill 会按门控阶段自动执行：
 1. 创建 Issue `001-implement-user-login.md`
-2. 启动 rd-1（读取提示词和档案，开始编码）
-3. 启动 qa（读取提示词和档案，开始编写测试）
-4. 两者完成后生成汇总报告
+2. 启动 PM，接收并澄清需求
+3. 在进入架构规划前暂停，等待你的确认
+4. 启动架构师，将工作拆分并分配给 rd-1 和 QA
+5. 在进入实现阶段前暂停，等待你的确认
 
 ```
-## 汇总报告 - Issue #001，第 1 轮
-- rd-1 (claude-opus-4-6)：实现了登录接口，JWT Token 生成
-- qa (claude-sonnet-4-6)：编写了 12 个测试用例，覆盖认证流程
+## 阶段 1 汇总 - Issue #001
+- pm：已澄清登录需求
 
-等待您的审查。
+等待你确认后再进入架构规划。
 ```
 
 ```bash
-# 第三步：给出反馈
-> rd-1 增加 refresh token 支持
+# 第三步：确认进入架构规划阶段
+> proceed
 ```
 
-Skill 将反馈追加到 Issue，并重新启动 rd-1（带有完整历史上下文）。
+你确认后，流程会继续进入架构规划、实现、QA 审查、架构师最终技术审查，以及 PM 最终验收，并在每个阶段之间暂停等待确认。
 
 ```bash
-# 第四步：通过验收
+# 第四步：最终验收
 > 可以了
 ```
 
@@ -244,43 +247,44 @@ Issue 标记为完成。
 ### 示例 2：全栈 + 自定义角色
 
 ```bash
-/init-team 1pm,1fe,1be,1qa,1devops --name saas-platform
+/init-team 1pm,1architect,1fe,1be,1qa,1devops --name saas-platform
 ```
 
-创建 5 个智能体。`devops` 不在内置角色中，AI Team 会智能生成 DevOps 相关内容（CI/CD、基础设施、监控等职责）。
+创建 6 个智能体。`devops` 不在内置角色中，AI Team 会智能生成 DevOps 相关内容（CI/CD、基础设施、监控等职责）。
 
 ### 示例 3：多会话模式
 
 终端 1：
 ```bash
-/run-team rd-1 --task "实现支付服务"
-# 创建 Issue #002
+/run-team pm --task "实现支付服务"
+# 创建 Issue #002 并记录需求
 ```
 
 终端 2：
 ```bash
-/run-team qa --issue 002
-# QA 接手同一个 Issue 开始测试
+/run-team architect --issue 002
+# 架构师接手已批准的 Issue，完成拆解并分配研发/QA
 ```
 
-两个智能体通过共享的 `.ai-team/` 目录协调工作。
+在用户确认后，后续终端再继续执行 `/run-team rd-1 --issue 002`、`/run-team qa --issue 002`，以及最后的架构师/PM 审查阶段，整个过程都通过共享的 `.ai-team/` 目录协调。
 
 ## 预设模板
 
 | 模板 | 组成 | 适用场景 |
 |------|------|----------|
-| `web-standard` | 1 PM + 2 RD + 1 QA | 标准 Web 项目 |
-| `mobile-app` | 1 PM + 2 RD + 1 QA + 1 Designer | 移动端应用 |
-| `data-pipeline` | 1 PM + 2 RD + 1 DE | 数据工程项目 |
-| `fullstack` | 1 PM + 1 FE + 1 BE + 1 QA | 前后端分离项目 |
-| `minimal` | 1 RD + 1 QA | 快速验证 |
+| `web-standard` | 1 PM + 1 架构师 + 2 RD + 1 QA | 标准 Web 项目 |
+| `mobile-app` | 1 PM + 1 架构师 + 2 RD + 1 QA + 1 Designer | 移动端应用 |
+| `data-pipeline` | 1 PM + 1 架构师 + 2 RD + 1 DE | 数据工程项目 |
+| `fullstack` | 1 PM + 1 架构师 + 1 FE + 1 BE + 1 QA | 前后端分离项目 |
+| `minimal` | 1 PM + 1 架构师 + 1 RD + 1 QA | 快速验证 |
 
 ## 内置角色
 
 | 缩写 | 角色 | 职责方向 |
 |------|------|----------|
-| `pm` | 项目经理 | 需求管理、协调沟通、进度跟踪 |
-| `rd` | 开发工程师 | 架构设计、代码实现、代码审查 |
+| `pm` | 项目经理 | 需求接收、业务澄清、最终验收 |
+| `architect` | 架构师 | 需求拆解、任务分配、QA 分配、README/变更日志维护、争议审查、最终技术审查 |
+| `rd` | 开发工程师 | 代码实现、代码审查 |
 | `qa` | 测试工程师 | 测试设计、缺陷跟踪、质量保证 |
 | `fe` | 前端工程师 | UI 实现、性能优化、无障碍 |
 | `be` | 后端工程师 | API 设计、数据库、服务端逻辑 |
@@ -306,12 +310,12 @@ Issue 标记为完成。
 - **工作目录** — 用于记录工作进展
 
 **run-team** 读取这些文件并启动智能体：
-1. 读取智能体的提示词、档案和协作规范
+1. 读取相关智能体的提示词、档案和协作规范
 2. 创建 Issue 追踪任务
-3. 注入完整上下文，启动智能体
-4. 智能体工作，记录日志，并**自动更新自己的能力档案**（新技能、成长方向、学习记录）
-5. 收集结果，生成汇总报告
-6. 循环接收反馈，直到你通过验收
+3. 注入当前阶段的完整上下文并启动对应智能体
+4. 当前角色执行工作、记录日志，并**自动更新自己的能力档案**（新技能、成长方向、学习记录）
+5. 每个阶段结束后暂停，等待你明确确认后再进入下一阶段
+6. 按照 PM 需求接收、架构师规划与分配、实现、QA 审查、架构师最终技术审查、PM 最终验收的顺序继续推进
 
 智能体之间通过文件进行沟通 — Issue、工作日志，以及文档中的 `@{角色编号}` 提及。
 

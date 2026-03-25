@@ -22,9 +22,9 @@ AI Team provides two skills for [Claude Code](https://docs.anthropic.com/en/docs
 
 - **One-command team setup** — preset templates or custom role combinations
 - **Role-specific system prompts** — each agent knows its identity, responsibilities, and how to collaborate
-- **Self-learning agents** — each agent updates its capability profile after every work round, tracking new skills and growth
+- **Self-learning agents** — each agent updates its capability profile after every work stage, tracking new skills and growth
 - **Structured collaboration** — file-based communication, issue tracking, decision records
-- **Iterative task workflow** — assign tasks, review results, give feedback, repeat until done
+- **Approval-gated task workflow** — plan, implement, review, and accept one stage at a time
 - **Multi-session support** — run agents in one session or across multiple terminals
 
 ## Installation
@@ -140,7 +140,7 @@ The `run-team` skill requires Claude Code's Agent tool for subagent dispatch. Fo
 /init-team web-standard
 
 # Custom combination
-/init-team 2rd,1qa,1pm --name my-project
+/init-team 1pm,1architect,2rd,1qa --name my-project
 
 # Interactive mode (guided setup)
 /init-team
@@ -160,14 +160,17 @@ This creates a `.ai-team/` directory in your project:
 │   └── changelog.md
 ├── profiles/               # Each agent's skills & growth
 │   ├── pm.md
+│   ├── architect.md
 │   ├── rd-1.md
 │   └── ...
 ├── prompts/                # System prompts (copy to any platform)
 │   ├── pm.md
+│   ├── architect.md
 │   ├── rd-1.md
 │   └── ...
 └── worklog/                # Work logs per agent
     ├── pm/
+    ├── architect/
     ├── rd-1/
     └── ...
 ```
@@ -175,8 +178,8 @@ This creates a `.ai-team/` directory in your project:
 ### Run Your Team
 
 ```bash
-# Assign a task to specific roles
-/run-team rd-1,qa --task "implement user authentication"
+# Assign a task to the architect-led delivery chain
+/run-team pm,architect --task "implement user authentication"
 
 # Run all team members
 /run-team all --task "set up the project structure"
@@ -194,45 +197,45 @@ This creates a `.ai-team/` directory in your project:
 /init-team web-standard --name my-web-app
 ```
 
-This creates a team with 1 PM, 2 Developers (rd-1, rd-2), and 1 QA Engineer:
+This creates a team with 1 PM, 1 Architect, 2 Developers (rd-1, rd-2), and 1 QA Engineer:
 
 ```
-Generated .ai-team/ with 19 files:
+Generated .ai-team/ with 22 files:
   team.md, collaboration.md
-  profiles/pm.md, profiles/rd-1.md, profiles/rd-2.md, profiles/qa.md
-  prompts/pm.md, prompts/rd-1.md, prompts/rd-2.md, prompts/qa.md
+  profiles/pm.md, profiles/architect.md, profiles/rd-1.md, profiles/rd-2.md, profiles/qa.md
+  prompts/pm.md, prompts/architect.md, prompts/rd-1.md, prompts/rd-2.md, prompts/qa.md
   project/README.md, project/changelog.md
-  worklog/pm/, worklog/rd-1/, worklog/rd-2/, worklog/qa/
+  worklog/pm/, worklog/architect/, worklog/rd-1/, worklog/rd-2/, worklog/qa/
 ```
 
 ```bash
 # Step 2: Assign a task
-/run-team rd-1,qa --task "implement user login with JWT authentication"
+/run-team all --task "implement user login with JWT authentication"
 ```
 
-The skill:
+The skill now runs as a gated sequence:
 1. Creates issue `001-implement-user-login.md`
-2. Launches rd-1 (reads its prompt + profile, starts coding)
-3. Launches qa (reads its prompt + profile, starts writing tests)
-4. Presents a summary report when both finish
+2. Launches PM to capture and clarify the requirement
+3. Pauses for your confirmation before architect planning starts
+4. Launches architect to decompose the work and assign rd-1 plus QA
+5. Pauses for your confirmation before implementation starts
 
 ```
-## Summary Report - Issue #001, Round 1
-- rd-1 (claude-opus-4-6): Implemented login endpoint, JWT token generation
-- qa (claude-sonnet-4-6): Wrote 12 test cases covering auth flow
+## Stage 1 Summary - Issue #001
+- pm: Clarified the login requirement
 
-Awaiting your review.
+Awaiting your confirmation to start architect planning.
 ```
 
 ```bash
-# Step 3: Give feedback
-> rd-1 add refresh token support
+# Step 3: Approve architect planning
+> proceed
 ```
 
-The skill appends feedback to the issue and relaunches rd-1 with the full history.
+After you confirm, the workflow continues with architect planning, implementation, QA review, final technical review from architect, and PM acceptance, pausing between each stage.
 
 ```bash
-# Step 4: Approve
+# Step 4: Final acceptance
 > looks good
 ```
 
@@ -241,43 +244,44 @@ Issue marked as done.
 ### Example 2: Full-Stack with Custom Roles
 
 ```bash
-/init-team 1pm,1fe,1be,1qa,1devops --name saas-platform
+/init-team 1pm,1architect,1fe,1be,1qa,1devops --name saas-platform
 ```
 
-Creates 5 agents. The `devops` role isn't built-in, so AI Team intelligently generates DevOps-appropriate content (CI/CD, infrastructure, monitoring responsibilities).
+Creates 6 agents. The `devops` role isn't built-in, so AI Team intelligently generates DevOps-appropriate content (CI/CD, infrastructure, monitoring responsibilities).
 
 ### Example 3: Multi-Session Mode
 
 In Terminal 1:
 ```bash
-/run-team rd-1 --task "implement payment service"
-# Creates issue #002
+/run-team pm --task "implement payment service"
+# Creates issue #002 and records the requirement
 ```
 
 In Terminal 2:
 ```bash
-/run-team qa --issue 002
-# QA picks up the same issue and starts testing
+/run-team architect --issue 002
+# Architect picks up the approved issue, decomposes it, and assigns implementation/QA
 ```
 
-Both agents coordinate through the shared `.ai-team/` directory.
+After user approval, later terminals continue with `/run-team rd-1 --issue 002`, `/run-team qa --issue 002`, and the final architect/PM review stages through the same shared `.ai-team/` directory.
 
 ## Preset Templates
 
 | Template | Composition | Use Case |
 |----------|------------|----------|
-| `web-standard` | 1 PM + 2 RD + 1 QA | Standard web project |
-| `mobile-app` | 1 PM + 2 RD + 1 QA + 1 Designer | Mobile application |
-| `data-pipeline` | 1 PM + 2 RD + 1 DE | Data engineering |
-| `fullstack` | 1 PM + 1 FE + 1 BE + 1 QA | Frontend/backend split |
-| `minimal` | 1 RD + 1 QA | Quick validation |
+| `web-standard` | 1 PM + 1 Architect + 2 RD + 1 QA | Standard web project |
+| `mobile-app` | 1 PM + 1 Architect + 2 RD + 1 QA + 1 Designer | Mobile application |
+| `data-pipeline` | 1 PM + 1 Architect + 2 RD + 1 DE | Data engineering |
+| `fullstack` | 1 PM + 1 Architect + 1 FE + 1 BE + 1 QA | Frontend/backend split |
+| `minimal` | 1 PM + 1 Architect + 1 RD + 1 QA | Quick validation |
 
 ## Built-in Roles
 
 | Abbr | Role | Focus |
 |------|------|-------|
-| `pm` | Project Manager | Requirements, coordination, progress tracking |
-| `rd` | Developer | Architecture, implementation, code review |
+| `pm` | Project Manager | Requirement intake, business clarification, final acceptance |
+| `architect` | Architect | Requirement decomposition, task assignment, QA routing, README/changelog maintenance, dispute review, final technical review |
+| `rd` | Developer | Implementation, code review |
 | `qa` | QA Engineer | Testing, defect tracking, quality assurance |
 | `fe` | Frontend Engineer | UI, performance, accessibility |
 | `be` | Backend Engineer | APIs, databases, server-side logic |
@@ -303,16 +307,16 @@ Any abbreviation not listed above is treated as a custom role — AI generates a
 - A **worklog directory** for recording progress
 
 **run-team** reads these files and launches agents:
-1. Reads the agent's prompt, profile, and collaboration guidelines
+1. Reads the relevant prompts, profiles, and collaboration guidelines
 2. Creates an issue to track the task
-3. Dispatches the agent with full context
-4. Agent works, writes worklog, and **updates its own capability profile** (new skills, growth areas, learning log)
-5. Collects results and presents a summary
-6. Loops through feedback until you approve
+3. Dispatches the current stage with full context
+4. The active role works, writes its worklog, and **updates its own capability profile** (new skills, growth areas, learning log)
+5. Pauses after each stage and waits for your explicit confirmation before moving on
+6. Continues through PM requirement intake, architect planning and assignment, implementation, QA review, architect final technical review, and PM final acceptance
 
 Agents communicate through files — issues, worklogs, and `@{role-id}` mentions in documents.
 
-**Self-learning:** After each work round, every agent reflects on what it learned and updates its `profiles/{id}.md`. Over time, each agent's profile becomes a rich record of accumulated skills and experience — making future task assignments more informed.
+**Self-learning:** After each work stage, every agent reflects on what it learned and updates its `profiles/{id}.md`. Over time, each agent's profile becomes a rich record of accumulated skills and experience — making future task assignments more informed.
 
 ## License
 

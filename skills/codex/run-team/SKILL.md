@@ -7,7 +7,7 @@ description: Use when launching AI team members to work on tasks, dispatching ro
 
 ## Overview
 
-Launch team members as subagents to work on tasks. Creates issues, dispatches agents with role-specific prompts, collects results, and manages an iterative acceptance loop until the user approves.
+Launch team members as subagents to work on tasks. Creates issues, dispatches agents with role-specific prompts, collects results, and manages an architect-led, user-gated stage loop until PM acceptance is complete.
 
 **Prerequisite:** `.ai-team/` directory must exist (created by `init-team`).
 
@@ -17,9 +17,9 @@ Launch team members as subagents to work on tasks. Creates issues, dispatches ag
 
 ### Command Formats
 
-- `/run-team rd-1,qa --task "implement user login"` — start specified roles with task
+- `/run-team pm,architect --task "implement user login"` — start the gated intake and planning chain for a task
 - `/run-team all --task "..."` — start all roles listed in `.ai-team/team.md`
-- `/run-team rd-1,qa` — interactive mode, ask the user for a task description
+- `/run-team pm,architect` — interactive mode, ask the user for a task description
 - `/run-team rd-1 --issue 001` — continue working on an existing issue
 
 ### Rules
@@ -38,10 +38,10 @@ Launch team members as subagents to work on tasks. Creates issues, dispatches ag
 
 Used when multiple roles are launched in one command within a single conversation.
 
-1. Launch multiple subagents in one response (one per role).
-2. If concurrent subagent calls are unsupported, fall back to sequential execution.
-3. After all agents complete, auto-generate a summary report.
-4. Enter the acceptance flow (see below).
+1. Launch only the roles for the current stage, not the whole workflow at once.
+2. If concurrent subagent calls are unsupported, fall back to sequential execution for that stage.
+3. After the stage completes, auto-generate a stage summary report.
+4. Stop and wait for explicit user approval before starting the next stage.
 
 ### Multi-Session Mode
 
@@ -50,6 +50,22 @@ Used when roles are launched in separate terminals or separate commands.
 1. Each terminal runs `/run-team {role} --task "..." ` or `/run-team {role} --issue {number}` independently.
 2. Coordination is file-based: agents check issue files for updates and write worklogs independently.
 3. No automatic summary — the user reviews files in `.ai-team/project/` manually.
+4. The same stage order and approval gates still apply; do not start a later stage until the previous stage has explicit user approval.
+5. In a new issue, start with `pm` (or `pm,architect` in one terminal) rather than launching developers or QA directly. Later stages should resume the approved issue with `--issue {number}`.
+
+### Default Stage Order
+
+The documented workflow is always:
+
+1. PM requirement intake and clarification.
+2. Architect planning, decomposition, and assignment.
+3. Implementation by the assigned developer roles.
+4. QA review by the assigned QA role.
+5. Architect final technical review.
+6. PM acceptance.
+
+Each handoff requires explicit user approval before the next stage starts. If the user asks for changes, relaunch only the role(s) in the current stage or the specific stage being revised.
+If architect assigns multiple developers in the implementation stage, they all work within the same gated stage. QA cannot begin until every assigned developer has completed their work and the user explicitly approves moving forward.
 
 ### Mode Detection
 
@@ -78,26 +94,39 @@ Scan `.ai-team/project/issues/` for the highest existing issue number and increm
 
 ## Status: in-progress
 
-## Assigned: rd-1, qa
+## Assigned: pm, architect
+
+## Stage Status
+- PM requirement intake: approved
+- Architect planning: approved
+- Implementation: ready after architect assignment
+- QA review: pending architect assignment
+- Architect final review: pending
+- PM acceptance: pending
 
 ## Progress
 
-### Round 1 - {date}
-- **rd-1** (model: claude-opus-4-6): {work summary}
-- **qa** (model: claude-sonnet-4-6): {work summary}
-- **Summary**: {auto-generated summary report}
-- **User Feedback**: rd-1 login redirect has a bug
+### Stage 1 - PM requirement intake - {date}
+- **pm** (model: claude-opus-4-6): {requirement clarification summary}
+- **User Feedback**: approved for architect planning
 
-### Round 2 - {date}
-- **rd-1** (model: claude-opus-4-6): {fix summary}
-- **User Feedback**: approved
+### Stage 2 - Architect planning - {date}
+- **architect** (model: claude-opus-4-6): {task breakdown and role assignment summary}
+- **Assigned Developers**: rd-1
+- **Assigned QA**: qa
+- **User Feedback**: approved for implementation
+
+### Stage 3 - Implementation - {date}
+- **rd-1** (model: claude-opus-4-6): {implementation summary}
+- **rd-2** (model: claude-sonnet-4-6): {implementation summary if assigned}
+- **User Feedback**: approved for QA review
 
 ## Status: done
 ```
 
 ### Rules
 
-- Each round records: agent work summaries, model used, and user feedback.
+- Each stage records: agent work summaries, model used, stage-specific assignments, and user feedback.
 - When `--issue` is used, read the existing file and inject its full content into agent context.
 - Race condition caveat: in multi-session mode, two agents may update the same issue file concurrently. Keep updates append-only to minimize conflicts.
 
@@ -109,10 +138,10 @@ Each subagent receives the following context, assembled in this order:
 
 1. **Role prompt** from `.ai-team/prompts/{id}.md`, plus **file attribution rules** (see File Attribution Rules below — inject alongside the prompt at launch time)
 2. **Role profile** from `.ai-team/profiles/{id}.md` (read for context; agent will update it after completing work)
-3. **Full issue content** (task description + all round history)
+3. **Full issue content** (task description + all stage history)
 4. **Collaboration guidelines** from `.ai-team/collaboration.md`
 
-When `--issue` is used, the full issue history is injected so the agent has complete context continuity across rounds.
+When `--issue` is used, the full issue history is injected so the agent has complete context continuity across stages.
 
 ---
 
@@ -127,19 +156,19 @@ Execute these steps in order:
    - Without `--issue`: scan `.ai-team/project/issues/` for the highest number, increment, create a new issue file.
    - With `--issue`: read the existing issue file. If not found, list existing issues.
 3. **Launch agents:**
-   - For each role: read its prompt (`.ai-team/prompts/{id}.md`), profile (`.ai-team/profiles/{id}.md`), issue content, and collaboration guidelines (`.ai-team/collaboration.md`).
+   - For each role in the active stage: read its prompt (`.ai-team/prompts/{id}.md`), profile (`.ai-team/profiles/{id}.md`), issue content, and collaboration guidelines (`.ai-team/collaboration.md`).
    - Assemble the full context and launch the agent as a subagent.
 4. **Agent execution:**
    - Each agent executes the task from its role perspective.
    - Each agent writes a worklog entry to `.ai-team/worklog/{id}/`.
-   - Each agent updates the current issue file — appending work summary and listing all files created/modified with paths under the current round's Progress section.
+   - Each agent updates the current issue file — appending work summary and listing all files created/modified with paths under the current stage's Progress section.
    - Each agent updates its own profile at `.ai-team/profiles/{id}.md` — adding new skills learned, updating growth areas, and logging what was learned in the Learning Log table.
    - Each agent reports the model it is running on (best-effort).
 5. **Collect results:**
    - Gather all agent outputs.
-   - Generate a summary report.
-   - Update the issue file with the round's results.
-6. **Prompt user to review:** After all agents complete, display a checklist of files to review for each agent:
+   - Generate a stage summary report.
+   - Update the issue file with the stage's results.
+6. **Prompt user to review:** After the current stage completes, display a checklist of files to review for each agent in that stage:
    ```
    ✅ {id} 已完成工作，请检查：
    - Issue: `.ai-team/project/issues/{issue-file}`
@@ -147,7 +176,7 @@ Execute these steps in order:
    - Profile: `.ai-team/profiles/{id}.md`
    - 产出文件: {list of files created/modified}
    ```
-7. **Enter acceptance flow** (single-session mode only).
+7. **Enter the stage gate** and wait for explicit user approval before launching the next stage.
 
 ---
 
@@ -210,7 +239,7 @@ For files that do not support comments (JSON, binary, images, etc.), record the 
 
 ## Summary Report
 
-Generated after all agents complete a round (single-session mode only).
+Generated after the current stage completes (single-session mode only).
 
 ### Structure
 
@@ -222,27 +251,28 @@ Present the summary report directly to the user in the conversation, then enter 
 
 ---
 
-## Acceptance Flow
+## Stage Gate and Acceptance Flow
 
 An iterative loop within the current conversation (single-session mode only):
 
-1. **Present** the summary report to the user.
+1. **Present** the current stage summary report to the user.
 2. **Interpret** the user's response using LLM judgment:
-   - **Approval** ("approved", "looks good", "LGTM", "ship it", etc.) — mark the issue status as `done`, workflow ends.
-   - **Targeted feedback** ("rd-1 fix the redirect bug") — append feedback to the issue file, relaunch only the specified agent(s).
-   - **Multi-agent feedback** ("rd-1 and qa recheck this") — append feedback to the issue, relaunch both specified agents.
+   - **Approval** for the current stage ("approved", "looks good", "LGTM", "ship it", etc.) — mark the current stage complete and, if another stage remains, launch only the next stage after the user explicitly approves moving on. If the current stage is PM acceptance, mark the issue status as `done` and end the workflow.
+   - **Targeted feedback** ("architect revise the assignment", "qa recheck this") — append feedback to the issue file, relaunch only the role(s) in the current stage or the stage the feedback applies to.
+   - **Multi-role feedback** ("rd-1 and qa recheck this") — append feedback to the issue, relaunch only the specified role(s) for that stage.
 3. **Selective relaunch rules:**
-   - Only the specified agents are relaunched. Non-restarted agents' previous results remain untouched.
+   - Only the specified stage or role(s) are relaunched. Results from earlier stages remain untouched.
    - Relaunched agents receive the full issue history including the new feedback.
-   - Users can add agents not in the original set, as long as the role exists in `.ai-team/team.md`. Validate before launching.
+   - If one of several assigned developers needs revision, keep the workflow in the implementation stage until the user approves the implementation stage as a whole.
+   - Users can add roles for the current stage or the next stage, as long as the role exists in `.ai-team/team.md`. Validate before launching.
 4. **No extra commands needed** — the skill maintains the current issue context throughout the loop.
-5. **Loop continues** until the user explicitly approves.
+5. **Loop continues** until PM acceptance is explicitly approved after architect final review.
 
 ---
 
 ## Worklog Entry Template
 
-Each agent writes a worklog entry to `.ai-team/worklog/{id}/{issue-number}-round-{n}.md`:
+Each agent writes a worklog entry to `.ai-team/worklog/{id}/{issue-number}-stage-{n}.md`:
 
 ```markdown
 # {Issue Number} - {Brief Description}
