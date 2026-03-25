@@ -11,28 +11,28 @@ Quickly scaffold a complete AI agent team with role-specific prompts, capability
 
 ---
 
-## Trigger and Argument Parsing
+## Trigger and Invocation Rules
 
-### Command Mode
+### Interactive-only Command Model
 
-- Preset template: `/init-team web-standard`
-- Custom combination: `/init-team 1pm,1architect,2rd,1qa`
-- With options: `/init-team 1pm,1architect,2rd,1qa --name my-project --lang en`
+`init-team` is interactive-only and accepts only bare command invocation:
 
-### Interactive Mode
+- `/init-team`
 
-When invoked with no arguments (`/init-team`), enter guided setup (see Interactive Mode Flow below).
+Legacy forms such as `/init-team web-standard`, `/init-team 1pm,1architect,2rd,1qa`, and any inline flags or options are deprecated.
 
-### Argument Format
+If the user provides a legacy form:
 
-Custom combinations use `{count}{abbreviation}` comma-separated. Examples:
+1. Stop immediately.
+2. Do not treat the extra input as partial state or defaults.
+3. Tell the user the old form is deprecated.
+4. Instruct them to rerun the bare command.
+
+### Team Composition Format
+
+During the guided flow, custom combinations still use `{count}{abbreviation}` comma-separated. Examples:
 - `1pm,1architect,2rd,1qa` — PM, architect, 2 developers, 1 QA
 - `1architect,1fe,1be,1qa` — architect, 1 frontend, 1 backend, 1 QA
-
-### Options
-
-- `--name {project-name}`: Set project name for generated documents. Defaults to the current working directory name.
-- `--lang {zh|en}`: Generate all document content in Chinese or English. If omitted, ask for the language preference before generation. Directory and file names always remain in English.
 
 ### Input Validation Rules
 
@@ -41,17 +41,16 @@ Apply these validation rules before generation:
 1. **Invalid template name**: Show the available preset templates table and prompt the user to re-select.
 2. **Malformed custom combo** (e.g., `2,rd` or `rd2`): Show the correct format `{count}{abbreviation}` with examples, and request re-input.
 3. **`.ai-team/` already exists**: Prompt the user with three options:
-   - **Overwrite** — delete the existing `.ai-team/` directory and regenerate everything
-   - **Merge** — only generate files that do not already exist, leaving existing files untouched
+   - **Reinitialize and overwrite** — delete the existing `.ai-team/` directory and regenerate everything
+   - **Switch to `update-team`** — stop initialization and direct the user to the dedicated team-maintenance flow
    - **Cancel** — abort without changes
 4. **Role count 0 or negative**: Silently ignore that role entry.
-5. **Invalid `--lang` value**: Show the accepted values `zh` and `en`, then request a valid selection.
+5. **Invalid language choice**: Show the accepted values `zh` and `en`, then request a valid selection.
 
 ### Language Preference Resolution
 
-- If `--lang` is provided, use it directly and do not ask again.
-- If `--lang` is omitted in command mode, detect a recommended default from the current user input, then explicitly ask the user to choose between English and Chinese before generation.
-- In interactive mode, always ask for language preference as part of the guided flow.
+- Always ask for language preference before any other setup question.
+- You may recommend a default based on the current user input, but the user must still explicitly choose.
 - Auto-detection only selects the recommended default. It never skips the language question.
 
 ---
@@ -133,6 +132,7 @@ Generate this file at `.ai-team/team.md`:
 ## Project Info
 - Project Name: {project name}
 - Created: {date}
+- Last Updated: {date}
 - Team Size: {count}
 
 ## Team Members
@@ -362,20 +362,24 @@ Include in the collaboration doc a section listing each role and what types of m
 
 ---
 
-## Interactive Mode Flow
+## Guided Flow
 
-When invoked with no arguments, follow this guided flow:
+When invoked as `/init-team`, follow this sequence:
 
-1. **Display preset templates**: Show the Preset Team Templates table and ask the user to select one or enter a custom combination.
-2. **User selects**: Accept a template name (e.g., `web-standard`) or a custom combo (e.g., `1pm,1architect,2rd,1qa`).
-3. **Ask for project name**: Prompt for a project name. Default: current working directory name.
-4. **Ask for language preference**: "Generate documents in English or Chinese?" Recommend a default based on the current user input.
-5. **Ask about customization**: "Would you like to customize role descriptions?" If yes:
+1. **Ask for language preference**: "Generate documents in English or Chinese?" Recommend a default when helpful.
+2. **Display preset templates**: Show the Preset Team Templates table and ask the user to select one or enter a custom combination.
+3. **User selects**: Accept a template name (e.g., `web-standard`) or a custom combo (e.g., `1pm,1architect,2rd,1qa`).
+4. **Ask for project name**: Prompt for a project name. Default: current working directory name.
+5. **Ask whether to customize role descriptions**: If yes:
    - Go role by role, showing the default values for each section
    - User can keep defaults, modify parts, or fully customize
    - Overridable sections: core responsibilities, current skills, growth direction, behavioral guidelines
-6. **Confirm and generate**: Show a summary of what will be generated and ask for confirmation.
-7. **Generate**: Execute the Generation Execution Instructions below (which handles `.gitignore` suggestion).
+6. **Check for existing `.ai-team/`**: Offer only:
+   - `reinitialize and overwrite`
+   - `switch to update-team`
+   - `cancel`
+7. **Show a summary preview**: Display the composition, project name, selected language, and customization choice.
+8. **Confirm and generate**: Ask for final confirmation before writing files.
 
 ---
 
@@ -383,10 +387,13 @@ When invoked with no arguments, follow this guided flow:
 
 Follow these steps to generate the team:
 
-1. **Parse input**: Determine team composition from template or custom combo. Apply naming rules.
-2. **Resolve language preference**: If `--lang` is provided, use it. Otherwise ask for language preference before generation, recommending a default based on the current user input.
-3. **Check for existing `.ai-team/`**: Apply the validation rules from Input Validation above (overwrite / merge / cancel).
-4. **Create directories** using shell commands with `mkdir -p`:
+1. **Validate invocation**: If the command is not the bare `/init-team`, stop and instruct the user to rerun the bare command.
+2. **Resolve language preference**: Ask for language preference first and require an explicit choice.
+3. **Parse input**: Determine team composition from the guided preset or custom-combo response. Apply naming rules.
+4. **Check for existing `.ai-team/`**: Apply the validation rules from Input Validation above (`reinitialize and overwrite` / `switch to update-team` / `cancel`).
+   - If the user chooses `switch to update-team`, stop initialization without writing files.
+   - If the user chooses `cancel`, abort without changes.
+5. **Create directories** using shell commands with `mkdir -p`:
    ```
    mkdir -p .ai-team/project/requirements .ai-team/project/issues .ai-team/project/decisions .ai-team/profiles .ai-team/prompts
    ```
@@ -394,7 +401,7 @@ Follow these steps to generate the team:
    ```
    mkdir -p .ai-team/worklog/{id}
    ```
-5. **Generate each file** listed below. Process roles in order, applying naming rules (single role = no number, multiple = numbered). Generate all files:
+6. **Generate each file** listed below. Process roles in order, applying naming rules (single role = no number, multiple = numbered). Generate all files:
    - `.ai-team/team.md`
    - `.ai-team/collaboration.md` (dynamically generated based on team composition)
    - `.ai-team/project/README.md`
@@ -405,8 +412,8 @@ Follow these steps to generate the team:
    - `.ai-team/profiles/{id}.md` for each team member
    - `.ai-team/prompts/{id}.md` for each team member
    - `.ai-team/worklog/{id}/.gitkeep` for each team member (empty file)
-6. **Display summary**: After generation, show a summary listing all created files and directories.
-7. **Suggest `.gitignore`**: Check if `.gitignore` exists and whether it already contains `.ai-team/`. If not, suggest adding it:
+7. **Display summary**: After generation, show a summary listing all created files and directories.
+8. **Suggest `.gitignore`**: Check if `.gitignore` exists and whether it already contains `.ai-team/`. If not, suggest adding it:
    ```
    echo ".ai-team/" >> .gitignore
    ```
