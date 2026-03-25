@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="glow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#a78bfa;stop-opacity:0.3" />
+      <stop offset="100%" style="stop-color:#c4b5fd;stop-opacity:0.1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" rx="96" fill="url(#bg)" />
+
+  <!-- Subtle glow circle -->
+  <circle cx="256" cy="230" r="160" fill="url(#glow)" />
+
+  <!-- Central agent (larger) -->
+  <circle cx="256" cy="180" r="42" fill="#ffffff" opacity="0.95"/>
+  <circle cx="256" cy="180" r="16" fill="#6366f1"/>
+  <!-- Head -->
+  <circle cx="256" cy="140" r="22" fill="#ffffff" opacity="0.95"/>
+
+  <!-- Left agent -->
+  <circle cx="140" cy="260" r="34" fill="#ffffff" opacity="0.85"/>
+  <circle cx="140" cy="260" r="13" fill="#8b5cf6"/>
+  <circle cx="140" cy="226" r="18" fill="#ffffff" opacity="0.85"/>
+
+  <!-- Right agent -->
+  <circle cx="372" cy="260" r="34" fill="#ffffff" opacity="0.85"/>
+  <circle cx="372" cy="260" r="13" fill="#8b5cf6"/>
+  <circle cx="372" cy="226" r="18" fill="#ffffff" opacity="0.85"/>
+
+  <!-- Bottom-left agent -->
+  <circle cx="180" cy="360" r="30" fill="#ffffff" opacity="0.75"/>
+  <circle cx="180" cy="360" r="11" fill="#a78bfa"/>
+  <circle cx="180" cy="330" r="16" fill="#ffffff" opacity="0.75"/>
+
+  <!-- Bottom-right agent -->
+  <circle cx="332" cy="360" r="30" fill="#ffffff" opacity="0.75"/>
+  <circle cx="332" cy="360" r="11" fill="#a78bfa"/>
+  <circle cx="332" cy="330" r="16" fill="#ffffff" opacity="0.75"/>
+
+  <!-- Connection lines -->
+  <line x1="230" y1="195" x2="165" y2="240" stroke="#ffffff" stroke-width="2.5" opacity="0.4" stroke-linecap="round"/>
+  <line x1="282" y1="195" x2="347" y2="240" stroke="#ffffff" stroke-width="2.5" opacity="0.4" stroke-linecap="round"/>
+  <line x1="245" y1="215" x2="195" y2="340" stroke="#ffffff" stroke-width="2" opacity="0.3" stroke-linecap="round"/>
+  <line x1="267" y1="215" x2="317" y2="340" stroke="#ffffff" stroke-width="2" opacity="0.3" stroke-linecap="round"/>
+  <line x1="165" y1="280" x2="185" y2="335" stroke="#ffffff" stroke-width="2" opacity="0.3" stroke-linecap="round"/>
+  <line x1="347" y1="280" x2="327" y2="335" stroke="#ffffff" stroke-width="2" opacity="0.3" stroke-linecap="round"/>
+  <line x1="210" y1="360" x2="302" y2="360" stroke="#ffffff" stroke-width="2" opacity="0.25" stroke-linecap="round"/>
+
+  <!-- Text -->
+  <text x="256" y="460" font-family="system-ui, -apple-system, sans-serif" font-size="52" font-weight="700" fill="#ffffff" text-anchor="middle" letter-spacing="2">AI TEAM</text>
+</svg>

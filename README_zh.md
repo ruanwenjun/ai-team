@@ -1,0 +1,280 @@
+<p align="center">
+  <img src="assets/logo.svg" alt="AI Team Logo" width="200" />
+</p>
+
+<h1 align="center">AI Team</h1>
+
+<p align="center">
+  <strong>初始化并运行 AI 智能体团队，协同完成 Vibe Coding</strong>
+</p>
+
+<p align="center">
+  <a href="README.md">English</a>
+</p>
+
+---
+
+AI Team 为 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 提供两个 skill，帮助你快速搭建和管理多智能体团队。每个智能体拥有独立的角色、系统提示词、能力档案和工作目录，像真实开发团队一样协作完成项目。
+
+**平台无关** — 生成的提示词和文档可用于任何 AI 智能体工具。
+
+## 特性
+
+- **一键建队** — 预设模板或自定义角色组合
+- **角色专属提示词** — 每个智能体清楚自己的身份、职责和协作方式
+- **自我学习** — 每个智能体在每轮工作后自动更新能力档案，记录新技能和成长
+- **结构化协作** — 基于文件的沟通、Issue 跟踪、决策记录
+- **迭代式任务流** — 分配任务、审查结果、反馈修改，循环直到满意
+- **多会话支持** — 在一个会话中运行多个智能体，或在多个终端中分别运行
+
+## 安装
+
+### Claude Code
+
+**方式 A：项目级 skills（推荐，便于团队共享）**
+
+将 skills 复制到项目的 `.claude/skills/` 目录：
+
+```bash
+# 在你的项目根目录下
+git clone https://github.com/ruanwenjun/ai-team.git /tmp/ai-team
+cp -r /tmp/ai-team/skills/init-team .claude/skills/init-team
+cp -r /tmp/ai-team/skills/run-team .claude/skills/run-team
+```
+
+Claude Code 会自动发现 `.claude/skills/` 中的 skills，无需额外配置。
+
+**方式 B：个人级 skills（所有项目通用）**
+
+```bash
+# 复制到个人 skills 目录
+git clone https://github.com/ruanwenjun/ai-team.git /tmp/ai-team
+cp -r /tmp/ai-team/skills/init-team ~/.claude/skills/init-team
+cp -r /tmp/ai-team/skills/run-team ~/.claude/skills/run-team
+```
+
+**方式 C：软链接（通过 git pull 轻松更新）**
+
+```bash
+# 克隆一次
+git clone https://github.com/ruanwenjun/ai-team.git ~/ai-team
+
+# 软链接到个人 skills
+ln -s ~/ai-team/skills/init-team ~/.claude/skills/init-team
+ln -s ~/ai-team/skills/run-team ~/.claude/skills/run-team
+```
+
+安装后验证：
+```
+/init-team    # 应该能识别该 skill
+```
+
+### 其他 AI 智能体工具
+
+AI Team 生成的是**平台无关的 Markdown 文件**，你可以在任何 AI 工具中使用生成的提示词：
+
+1. 在 Claude Code 中运行 `/init-team`（或手动创建 `.ai-team/` 目录结构）
+2. 复制 `.ai-team/prompts/{角色编号}.md` 中的系统提示词
+3. 粘贴到你喜欢的工具中：
+
+| 工具 | 粘贴位置 |
+|------|---------|
+| **Cursor** | Rules for AI / `.cursorrules` 文件，或直接粘贴到对话中 |
+| **OpenAI Codex CLI** | 项目根目录的 `instructions.md`，或 `~/.codex/instructions.md` |
+| **GitHub Copilot** | `.github/copilot-instructions.md` |
+| **Windsurf** | `.windsurfrules` 文件 |
+| **其他工具** | 系统提示词 / 自定义指令字段 |
+
+`run-team` skill 依赖 Claude Code 的 Agent 工具来分派子智能体。对于其他平台，可以直接使用生成的提示词，通过 `.ai-team/project/issues/` 文件手动管理任务协调。
+
+---
+
+## 快速开始
+
+### 初始化团队
+
+```bash
+# 使用预设模板
+/init-team web-standard
+
+# 自定义组合
+/init-team 2rd,1qa,1pm --name my-project
+
+# 交互模式（引导式设置）
+/init-team
+
+# 生成中文文档
+/init-team web-standard --name my-project --lang zh
+```
+
+这会在你的项目中创建 `.ai-team/` 目录：
+
+```
+.ai-team/
+├── team.md                 # 团队总览
+├── collaboration.md        # 协作规范
+├── project/
+│   ├── README.md           # 项目目标和技术栈
+│   ├── issues/             # 任务跟踪
+│   ├── requirements/       # 需求文档
+│   ├── decisions/          # 架构决策记录 (ADR)
+│   └── changelog.md
+├── profiles/               # 每个智能体的能力和成长
+│   ├── pm.md
+│   ├── rd-1.md
+│   └── ...
+├── prompts/                # 系统提示词（可复制到任何平台）
+│   ├── pm.md
+│   ├── rd-1.md
+│   └── ...
+└── worklog/                # 每个智能体的工作日志
+    ├── pm/
+    ├── rd-1/
+    └── ...
+```
+
+### 运行团队
+
+```bash
+# 给指定角色分配任务
+/run-team rd-1,qa --task "实现用户认证功能"
+
+# 启动所有团队成员
+/run-team all --task "搭建项目基础架构"
+
+# 继续已有的 Issue
+/run-team rd-1 --issue 001
+```
+
+## 演示
+
+### 示例 1：标准 Web 项目
+
+```bash
+# 第一步：初始化 Web 团队
+/init-team web-standard --name my-web-app --lang zh
+```
+
+创建一个包含 1 个 PM、2 个开发（rd-1, rd-2）和 1 个 QA 的团队：
+
+```
+已生成 .ai-team/，共 19 个文件：
+  team.md, collaboration.md
+  profiles/pm.md, profiles/rd-1.md, profiles/rd-2.md, profiles/qa.md
+  prompts/pm.md, prompts/rd-1.md, prompts/rd-2.md, prompts/qa.md
+  project/README.md, project/changelog.md
+  worklog/pm/, worklog/rd-1/, worklog/rd-2/, worklog/qa/
+```
+
+```bash
+# 第二步：分配任务
+/run-team rd-1,qa --task "实现 JWT 用户登录功能"
+```
+
+Skill 会自动：
+1. 创建 Issue `001-implement-user-login.md`
+2. 启动 rd-1（读取提示词和档案，开始编码）
+3. 启动 qa（读取提示词和档案，开始编写测试）
+4. 两者完成后生成汇总报告
+
+```
+## 汇总报告 - Issue #001，第 1 轮
+- rd-1 (claude-opus-4-6)：实现了登录接口，JWT Token 生成
+- qa (claude-sonnet-4-6)：编写了 12 个测试用例，覆盖认证流程
+
+等待您的审查。
+```
+
+```bash
+# 第三步：给出反馈
+> rd-1 增加 refresh token 支持
+```
+
+Skill 将反馈追加到 Issue，并重新启动 rd-1（带有完整历史上下文）。
+
+```bash
+# 第四步：通过验收
+> 可以了
+```
+
+Issue 标记为完成。
+
+### 示例 2：全栈 + 自定义角色
+
+```bash
+/init-team 1pm,1fe,1be,1qa,1devops --name saas-platform
+```
+
+创建 5 个智能体。`devops` 不在内置角色中，AI Team 会智能生成 DevOps 相关内容（CI/CD、基础设施、监控等职责）。
+
+### 示例 3：多会话模式
+
+终端 1：
+```bash
+/run-team rd-1 --task "实现支付服务"
+# 创建 Issue #002
+```
+
+终端 2：
+```bash
+/run-team qa --issue 002
+# QA 接手同一个 Issue 开始测试
+```
+
+两个智能体通过共享的 `.ai-team/` 目录协调工作。
+
+## 预设模板
+
+| 模板 | 组成 | 适用场景 |
+|------|------|----------|
+| `web-standard` | 1 PM + 2 RD + 1 QA | 标准 Web 项目 |
+| `mobile-app` | 1 PM + 2 RD + 1 QA + 1 Designer | 移动端应用 |
+| `data-pipeline` | 1 PM + 2 RD + 1 DE | 数据工程项目 |
+| `fullstack` | 1 PM + 1 FE + 1 BE + 1 QA | 前后端分离项目 |
+| `minimal` | 1 RD + 1 QA | 快速验证 |
+
+## 内置角色
+
+| 缩写 | 角色 | 职责方向 |
+|------|------|----------|
+| `pm` | 项目经理 | 需求管理、协调沟通、进度跟踪 |
+| `rd` | 开发工程师 | 架构设计、代码实现、代码审查 |
+| `qa` | 测试工程师 | 测试设计、缺陷跟踪、质量保证 |
+| `fe` | 前端工程师 | UI 实现、性能优化、无障碍 |
+| `be` | 后端工程师 | API 设计、数据库、服务端逻辑 |
+| `de` | 数据工程师 | 数据管道、ETL、数据质量 |
+| `designer` | 设计师 | UI/UX 设计、交互规范、视觉稿 |
+
+未在列表中的缩写会被视为自定义角色 — AI 会自动生成合适的内容。
+
+## 参数说明
+
+| 参数 | 说明 | 默认值 |
+|------|------|--------|
+| `--name` | 生成文档中的项目名称 | 当前目录名 |
+| `--lang zh` | 以中文生成文档内容 | 英文 |
+| `--task` | `run-team` 的任务描述 | （必填） |
+| `--issue` | 继续已有的 Issue 编号 | （新建） |
+
+## 工作原理
+
+**init-team** 生成结构化的 Markdown 文件来定义你的团队。每个智能体获得：
+- **系统提示词** — 包含身份、职责、行为准则和协作指南
+- **能力档案** — 记录技能、成长方向和学习日志
+- **工作目录** — 用于记录工作进展
+
+**run-team** 读取这些文件并启动智能体：
+1. 读取智能体的提示词、档案和协作规范
+2. 创建 Issue 追踪任务
+3. 注入完整上下文，启动智能体
+4. 智能体工作，记录日志，并**自动更新自己的能力档案**（新技能、成长方向、学习记录）
+5. 收集结果，生成汇总报告
+6. 循环接收反馈，直到你通过验收
+
+智能体之间通过文件进行沟通 — Issue、工作日志，以及文档中的 `@{角色编号}` 提及。
+
+**自我学习：** 每轮工作结束后，每个智能体会反思自己学到了什么，并更新 `profiles/{id}.md`。随着时间推移，每个智能体的档案会成为丰富的技能和经验记录，让后续的任务分配更加精准。
+
+## 许可证
+
+Apache License 2.0 — 详见 [LICENSE](LICENSE)。

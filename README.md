@@ -1,0 +1,277 @@
+<p align="center">
+  <img src="assets/logo.svg" alt="AI Team Logo" width="200" />
+</p>
+
+<h1 align="center">AI Team</h1>
+
+<p align="center">
+  <strong>Initialize and run AI agent teams for collaborative vibe coding</strong>
+</p>
+
+<p align="center">
+  <a href="README_zh.md">中文文档</a>
+</p>
+
+---
+
+AI Team provides two skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) that help you quickly set up and manage multi-agent teams. Each agent gets its own role, system prompt, capability profile, and working directory — so they can collaborate on your project like a real development team.
+
+**Platform-agnostic** — the generated prompts and docs work with any AI agent tool.
+
+## Features
+
+- **One-command team setup** — preset templates or custom role combinations
+- **Role-specific system prompts** — each agent knows its identity, responsibilities, and how to collaborate
+- **Self-learning agents** — each agent updates its capability profile after every work round, tracking new skills and growth
+- **Structured collaboration** — file-based communication, issue tracking, decision records
+- **Iterative task workflow** — assign tasks, review results, give feedback, repeat until done
+- **Multi-session support** — run agents in one session or across multiple terminals
+
+## Installation
+
+### Claude Code
+
+**Option A: Project-level skills (recommended for team sharing)**
+
+Copy the skills into your project's `.claude/skills/` directory:
+
+```bash
+# In your project root
+git clone https://github.com/ruanwenjun/ai-team.git /tmp/ai-team
+cp -r /tmp/ai-team/skills/init-team .claude/skills/init-team
+cp -r /tmp/ai-team/skills/run-team .claude/skills/run-team
+```
+
+Claude Code auto-discovers skills in `.claude/skills/` — no configuration needed.
+
+**Option B: Personal skills (available across all projects)**
+
+```bash
+# Copy to your personal skills directory
+git clone https://github.com/ruanwenjun/ai-team.git /tmp/ai-team
+cp -r /tmp/ai-team/skills/init-team ~/.claude/skills/init-team
+cp -r /tmp/ai-team/skills/run-team ~/.claude/skills/run-team
+```
+
+**Option C: Symlink (easy updates via git pull)**
+
+```bash
+# Clone once
+git clone https://github.com/ruanwenjun/ai-team.git ~/ai-team
+
+# Symlink to personal skills
+ln -s ~/ai-team/skills/init-team ~/.claude/skills/init-team
+ln -s ~/ai-team/skills/run-team ~/.claude/skills/run-team
+```
+
+After installation, verify skills are available:
+```
+/init-team    # Should show the skill is recognized
+```
+
+### Other AI Agent Tools
+
+AI Team generates **platform-agnostic markdown files**. You can use the generated prompts with any AI agent tool:
+
+1. Run `/init-team` in Claude Code (or manually create the `.ai-team/` directory structure)
+2. Copy the system prompt from `.ai-team/prompts/{role-id}.md`
+3. Paste it into your preferred tool's system prompt field:
+
+| Tool | Where to paste the prompt |
+|------|--------------------------|
+| **Cursor** | Rules for AI / `.cursorrules` file, or paste into chat |
+| **OpenAI Codex CLI** | `instructions.md` in your project root, or `~/.codex/instructions.md` |
+| **GitHub Copilot** | `.github/copilot-instructions.md` |
+| **Windsurf** | `.windsurfrules` file |
+| **Other tools** | System prompt / custom instructions field |
+
+The `run-team` skill requires Claude Code's Agent tool for subagent dispatch. For other platforms, use the generated prompts directly and manage task coordination manually through the `.ai-team/project/issues/` files.
+
+---
+
+## Quick Start
+
+### Initialize a Team
+
+```bash
+# Use a preset template
+/init-team web-standard
+
+# Custom combination
+/init-team 2rd,1qa,1pm --name my-project
+
+# Interactive mode (guided setup)
+/init-team
+```
+
+This creates a `.ai-team/` directory in your project:
+
+```
+.ai-team/
+├── team.md                 # Team overview
+├── collaboration.md        # How agents work together
+├── project/
+│   ├── README.md           # Project goals & tech stack
+│   ├── issues/             # Task tracking
+│   ├── requirements/       # Requirements docs
+│   ├── decisions/          # Architecture Decision Records
+│   └── changelog.md
+├── profiles/               # Each agent's skills & growth
+│   ├── pm.md
+│   ├── rd-1.md
+│   └── ...
+├── prompts/                # System prompts (copy to any platform)
+│   ├── pm.md
+│   ├── rd-1.md
+│   └── ...
+└── worklog/                # Work logs per agent
+    ├── pm/
+    ├── rd-1/
+    └── ...
+```
+
+### Run Your Team
+
+```bash
+# Assign a task to specific roles
+/run-team rd-1,qa --task "implement user authentication"
+
+# Run all team members
+/run-team all --task "set up the project structure"
+
+# Continue an existing issue
+/run-team rd-1 --issue 001
+```
+
+## Demo
+
+### Example 1: Standard Web Project
+
+```bash
+# Step 1: Initialize a web team
+/init-team web-standard --name my-web-app
+```
+
+This creates a team with 1 PM, 2 Developers (rd-1, rd-2), and 1 QA Engineer:
+
+```
+Generated .ai-team/ with 19 files:
+  team.md, collaboration.md
+  profiles/pm.md, profiles/rd-1.md, profiles/rd-2.md, profiles/qa.md
+  prompts/pm.md, prompts/rd-1.md, prompts/rd-2.md, prompts/qa.md
+  project/README.md, project/changelog.md
+  worklog/pm/, worklog/rd-1/, worklog/rd-2/, worklog/qa/
+```
+
+```bash
+# Step 2: Assign a task
+/run-team rd-1,qa --task "implement user login with JWT authentication"
+```
+
+The skill:
+1. Creates issue `001-implement-user-login.md`
+2. Launches rd-1 (reads its prompt + profile, starts coding)
+3. Launches qa (reads its prompt + profile, starts writing tests)
+4. Presents a summary report when both finish
+
+```
+## Summary Report - Issue #001, Round 1
+- rd-1 (claude-opus-4-6): Implemented login endpoint, JWT token generation
+- qa (claude-sonnet-4-6): Wrote 12 test cases covering auth flow
+
+Awaiting your review.
+```
+
+```bash
+# Step 3: Give feedback
+> rd-1 add refresh token support
+```
+
+The skill appends feedback to the issue and relaunches rd-1 with the full history.
+
+```bash
+# Step 4: Approve
+> looks good
+```
+
+Issue marked as done.
+
+### Example 2: Full-Stack with Custom Roles
+
+```bash
+/init-team 1pm,1fe,1be,1qa,1devops --name saas-platform
+```
+
+Creates 5 agents. The `devops` role isn't built-in, so AI Team intelligently generates DevOps-appropriate content (CI/CD, infrastructure, monitoring responsibilities).
+
+### Example 3: Multi-Session Mode
+
+In Terminal 1:
+```bash
+/run-team rd-1 --task "implement payment service"
+# Creates issue #002
+```
+
+In Terminal 2:
+```bash
+/run-team qa --issue 002
+# QA picks up the same issue and starts testing
+```
+
+Both agents coordinate through the shared `.ai-team/` directory.
+
+## Preset Templates
+
+| Template | Composition | Use Case |
+|----------|------------|----------|
+| `web-standard` | 1 PM + 2 RD + 1 QA | Standard web project |
+| `mobile-app` | 1 PM + 2 RD + 1 QA + 1 Designer | Mobile application |
+| `data-pipeline` | 1 PM + 2 RD + 1 DE | Data engineering |
+| `fullstack` | 1 PM + 1 FE + 1 BE + 1 QA | Frontend/backend split |
+| `minimal` | 1 RD + 1 QA | Quick validation |
+
+## Built-in Roles
+
+| Abbr | Role | Focus |
+|------|------|-------|
+| `pm` | Project Manager | Requirements, coordination, progress tracking |
+| `rd` | Developer | Architecture, implementation, code review |
+| `qa` | QA Engineer | Testing, defect tracking, quality assurance |
+| `fe` | Frontend Engineer | UI, performance, accessibility |
+| `be` | Backend Engineer | APIs, databases, server-side logic |
+| `de` | Data Engineer | Pipelines, ETL, data quality |
+| `designer` | Designer | UI/UX, interaction design, visual specs |
+
+Any abbreviation not listed above is treated as a custom role — AI generates appropriate content automatically.
+
+## Options
+
+| Flag | Description | Default |
+|------|------------|---------|
+| `--name` | Project name in generated docs | Current directory name |
+| `--lang zh` | Generate content in Chinese | English |
+| `--task` | Task description for `run-team` | (required) |
+| `--issue` | Resume an existing issue number | (creates new) |
+
+## How It Works
+
+**init-team** generates structured markdown files that define your team. Each agent gets:
+- A **system prompt** with its identity, responsibilities, behavioral guidelines, and collaboration instructions
+- A **capability profile** tracking skills and growth, with a learning log
+- A **worklog directory** for recording progress
+
+**run-team** reads these files and launches agents:
+1. Reads the agent's prompt, profile, and collaboration guidelines
+2. Creates an issue to track the task
+3. Dispatches the agent with full context
+4. Agent works, writes worklog, and **updates its own capability profile** (new skills, growth areas, learning log)
+5. Collects results and presents a summary
+6. Loops through feedback until you approve
+
+Agents communicate through files — issues, worklogs, and `@{role-id}` mentions in documents.
+
+**Self-learning:** After each work round, every agent reflects on what it learned and updates its `profiles/{id}.md`. Over time, each agent's profile becomes a rich record of accumulated skills and experience — making future task assignments more informed.
+
+## License
+
+Apache License 2.0 — see [LICENSE](LICENSE) for details.
