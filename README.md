@@ -190,16 +190,23 @@ Legacy argument-based forms are deprecated. If you used the previous command sty
 │   ├── architect.md
 │   ├── rd-1.md
 │   └── ...
-├── prompts/                # System prompts (copy to any platform)
-│   ├── pm.md
-│   ├── architect.md
-│   ├── rd-1.md
-│   └── ...
-└── worklog/                # Work logs per agent
-    ├── pm/
-    ├── architect/
-    ├── rd-1/
+└── prompts/                # System prompts (copy to any platform)
+    ├── pm.md
+    ├── architect.md
+    ├── rd-1.md
     └── ...
+```
+
+Each issue is a directory under `project/issues/` containing the issue file and all role worklogs:
+
+```
+project/issues/001-user-login/
+├── issue.md
+├── pm-stage-1-requirement-intake.md
+├── architect-stage-2-planning.md
+├── rd-1-stage-3-implementation.md
+├── qa-stage-4-review.md
+└── architect-stage-5-final-review.md
 ```
 
 ## Demo
@@ -219,7 +226,7 @@ Generated .ai-team/ with key files including:
   profiles/pm.md, profiles/architect.md, profiles/rd-1.md, profiles/rd-2.md, profiles/qa.md
   prompts/pm.md, prompts/architect.md, prompts/rd-1.md, prompts/rd-2.md, prompts/qa.md
   project/README.md, project/changelog.md
-  worklog/pm/, worklog/architect/, worklog/rd-1/, worklog/rd-2/, worklog/qa/
+  project/issues/
 ```
 
 ```bash
@@ -230,7 +237,7 @@ Generated .ai-team/ with key files including:
 Choose a language, select `start a new task`, and enter `implement user login with JWT authentication`.
 
 The skill then runs as a gated sequence:
-1. Creates issue `001-implement-user-login.md`
+1. Creates issue directory `001-implement-user-login/` with `issue.md`
 2. Launches PM to capture and clarify the requirement, optionally using external `brainstorming` when available
 3. Pauses for your confirmation before architect planning starts
 4. Launches architect to decompose the work and assign rd-1 plus QA, optionally using external `writing-plans` when available
@@ -327,7 +334,7 @@ The flow is stage-gated, so `/run-team` only surfaces the next valid action for 
 **init-team** generates structured markdown files that define your team. Each agent gets:
 - A **system prompt** with its identity, responsibilities, behavioral guidelines, and collaboration instructions
 - A **capability profile** tracking skills and growth, with a learning log
-- A **worklog directory** for recording progress
+- An **issue directory** containing the issue file and all role worklogs
 
 `init-team` always asks for language first, then walks through template or custom composition selection, project naming, optional role customization, and final confirmation.
 
@@ -335,7 +342,7 @@ In Claude Code, **run-team** reads these files and launches agents via the Agent
 1. Reads the relevant prompts, profiles, and collaboration guidelines
 2. Either creates an issue for a new task or resumes an existing issue through the guided flow
 3. Dispatches only the current stage with full context
-4. The active role works, writes its worklog, and **updates its own capability profile** (new skills, growth areas, learning log)
+4. The active role works, writes its worklog entry to the issue directory, and **updates its own capability profile** (new skills, growth areas, learning log)
 5. Pauses after each stage and waits for your explicit confirmation before moving on
 6. Continues through PM requirement intake, architect planning and assignment, implementation, QA review, architect final technical review, and PM final acceptance
 

@@ -67,7 +67,7 @@ When adding a member:
 1. Ask for the role type to add.
 2. Determine the next available stable role ID.
 3. Add the member to the pending team state.
-4. Mark the member as requiring a new worklog directory.
+4. Generate the member's profile and prompt files.
 
 ### Remove Member
 
@@ -86,8 +86,7 @@ When the user asks to review pending changes:
 1. Show the pending active team after additions and removals.
 2. Show the archive destinations for removed roles.
 3. Show which active roles will be regenerated.
-4. Show which new worklog directories will be created.
-5. Show the changelog summary that will be appended on apply.
+4. Show the changelog summary that will be appended on apply.
 
 ---
 
@@ -122,7 +121,7 @@ If blocked, instruct the user to reassign or finish that work before retrying `u
 
 ### Historical Preservation
 
-Do not rewrite existing issue history, worklogs, or archived references. Team updates affect future work only.
+Do not rewrite existing issue history, worklog entries, or archived references. Team updates affect future work only.
 
 ### Full Refresh for Active Roles
 
@@ -138,8 +137,7 @@ After final confirmation, apply the team update in this order:
 2. Rewrite `.ai-team/collaboration.md`
 3. Regenerate `.ai-team/profiles/{id}.md` for every active role
 4. Regenerate `.ai-team/prompts/{id}.md` for every active role
-5. Create `.ai-team/worklog/{id}/` for newly added roles
-6. Archive removed roles under `.ai-team/archive/roles/{id}/`
+5. Archive removed roles under `.ai-team/archive/roles/{id}/`
 7. Append a structured update entry to `.ai-team/project/changelog.md`
 
 The `team.md` output should include a `Last Updated` field in addition to the original creation date.
@@ -158,7 +156,6 @@ Each archived role keeps:
 
 - `profile.md`
 - `prompt.md`
-- `worklog/`
 - `archived.md`
 
 The archive note should capture the removal date and enough context to explain why the role left the active team.

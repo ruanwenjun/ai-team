@@ -104,12 +104,8 @@ Generate the following `.ai-team/` directory structure. Every file listed below 
 ├── profiles/                   # Role capability & responsibility documents
 │   ├── {id}.md                 # One per team member
 │   └── ...
-├── prompts/                    # System prompts for each role
-│   ├── {id}.md                 # One per team member
-│   └── ...
-└── worklog/                    # Work logs
-    ├── {id}/                   # One directory per team member
-    │   └── .gitkeep
+└── prompts/                    # System prompts for each role
+    ├── {id}.md                 # One per team member
     └── ...
 ```
 
@@ -137,13 +133,13 @@ Generate this file at `.ai-team/team.md`:
 
 ## Team Members
 
-| ID | Role | Status | Profile | Prompt | Worklog |
-|----|------|--------|---------|--------|---------|
-| pm | Project Manager | active | [profiles/pm.md](profiles/pm.md) | [prompts/pm.md](prompts/pm.md) | [worklog/pm/](worklog/pm/) |
-| architect | Architect | active | [profiles/architect.md](profiles/architect.md) | [prompts/architect.md](prompts/architect.md) | [worklog/architect/](worklog/architect/) |
-| rd-1 | Developer | active | [profiles/rd-1.md](profiles/rd-1.md) | [prompts/rd-1.md](prompts/rd-1.md) | [worklog/rd-1/](worklog/rd-1/) |
-| rd-2 | Developer | active | [profiles/rd-2.md](profiles/rd-2.md) | [prompts/rd-2.md](prompts/rd-2.md) | [worklog/rd-2/](worklog/rd-2/) |
-| qa | QA Engineer | active | [profiles/qa.md](profiles/qa.md) | [prompts/qa.md](prompts/qa.md) | [worklog/qa/](worklog/qa/) |
+| ID | Role | Status | Profile | Prompt |
+|----|------|--------|---------|--------|
+| pm | Project Manager | active | [profiles/pm.md](profiles/pm.md) | [prompts/pm.md](prompts/pm.md) |
+| architect | Architect | active | [profiles/architect.md](profiles/architect.md) | [prompts/architect.md](prompts/architect.md) |
+| rd-1 | Developer | active | [profiles/rd-1.md](profiles/rd-1.md) | [prompts/rd-1.md](prompts/rd-1.md) |
+| rd-2 | Developer | active | [profiles/rd-2.md](profiles/rd-2.md) | [prompts/rd-2.md](prompts/rd-2.md) |
+| qa | QA Engineer | active | [profiles/qa.md](profiles/qa.md) | [prompts/qa.md](prompts/qa.md) |
 
 ## Quick Links
 - [Collaboration Guidelines](collaboration.md)
@@ -247,7 +243,7 @@ You are the {Role Name} (ID: {ID}) on the {Project Name} project team.
 
 ## Working Directories
 - Your capability profile: `.ai-team/profiles/{ID}.md` — update regularly with your skills and growth
-- Your work log: `.ai-team/worklog/{ID}/` — log progress after each work session
+- Issue tracking: `.ai-team/project/issues/` — each issue is a directory containing the issue file and all worklogs
 - Project docs: `.ai-team/project/` — refer to requirements, issues, and decision records
 - Collaboration guidelines: `.ai-team/collaboration.md` — follow team collaboration processes
 
@@ -279,12 +275,12 @@ After completing your work in each stage, you MUST update the current issue file
   - **{your-ID}** (model: {model}): {brief work summary}
     - Created: `src/auth/login.js`
     - Modified: `src/routes/index.js`
-    - Worklog: `.ai-team/worklog/{your-ID}/{entry}.md`
+    - Worklog: `.ai-team/project/issues/{issue-dir}/{your-ID}-stage-{n}-{stage-name}.md`
   ```
 
 ## Output Standards
-- Work log format: `YYYY-MM-DD-{brief-description}.md`
-- Issue format: `{three-digit-number}-{brief-description}.md`
+- Work log format: `{your-ID}-stage-{n}-{stage-name}.md` (stored in the issue directory)
+- Issue directory format: `{three-digit-number}-{brief-description}/` with `issue.md` inside
 ```
 
 **Behavioral Guidelines** examples by role type:
@@ -411,10 +407,6 @@ Follow these steps to generate the team:
    ```
    mkdir -p .ai-team/project/requirements .ai-team/project/issues .ai-team/project/decisions .ai-team/profiles .ai-team/prompts
    ```
-   Then create worklog directories for each role:
-   ```
-   mkdir -p .ai-team/worklog/{id}
-   ```
 6. **Generate each file** listed below. Process roles in order, applying naming rules (single role = no number, multiple = numbered). Generate all files:
    - `.ai-team/team.md`
    - `.ai-team/collaboration.md` (dynamically generated based on team composition)
@@ -425,7 +417,6 @@ Follow these steps to generate the team:
    - `.ai-team/project/decisions/.gitkeep` (empty file)
    - `.ai-team/profiles/{id}.md` for each team member
    - `.ai-team/prompts/{id}.md` for each team member
-   - `.ai-team/worklog/{id}/.gitkeep` for each team member (empty file)
 7. **Display summary**: After generation, show a summary listing all created files and directories.
 8. **Suggest `.gitignore`**: Check if `.gitignore` exists and whether it already contains `.ai-team/`. If not, suggest adding it:
    ```

@@ -190,16 +190,23 @@ AI Team 生成的是可复用的 Markdown 文件，你可以在任何 AI 工具�
 │   ├── architect.md
 │   ├── rd-1.md
 │   └── ...
-├── prompts/                # 系统提示词（可复制到任何平台）
-│   ├── pm.md
-│   ├── architect.md
-│   ├── rd-1.md
-│   └── ...
-└── worklog/                # 每个智能体的工作日志
-    ├── pm/
-    ├── architect/
-    ├── rd-1/
+└── prompts/                # 系统提示词（可复制到任何平台）
+    ├── pm.md
+    ├── architect.md
+    ├── rd-1.md
     └── ...
+```
+
+每个 Issue 是 `project/issues/` 下的一个目录，包含 Issue 文件和所有角色的工作日志：
+
+```
+project/issues/001-user-login/
+├── issue.md
+├── pm-stage-1-requirement-intake.md
+├── architect-stage-2-planning.md
+├── rd-1-stage-3-implementation.md
+├── qa-stage-4-review.md
+└── architect-stage-5-final-review.md
 ```
 
 ## 演示
@@ -219,7 +226,7 @@ AI Team 生成的是可复用的 Markdown 文件，你可以在任何 AI 工具�
   profiles/pm.md, profiles/architect.md, profiles/rd-1.md, profiles/rd-2.md, profiles/qa.md
   prompts/pm.md, prompts/architect.md, prompts/rd-1.md, prompts/rd-2.md, prompts/qa.md
   project/README.md, project/changelog.md
-  worklog/pm/, worklog/architect/, worklog/rd-1/, worklog/rd-2/, worklog/qa/
+  project/issues/
 ```
 
 ```bash
@@ -230,7 +237,7 @@ AI Team 生成的是可复用的 Markdown 文件，你可以在任何 AI 工具�
 在引导流程里选择语言，选择 `start a new task`，并输入 `实现 JWT 用户登录功能`。
 
 Skill 会按门控阶段自动执行：
-1. 创建 Issue `001-implement-user-login.md`
+1. 创建 Issue 目录 `001-implement-user-login/` 及 `issue.md`
 2. 启动 PM 接收并澄清需求；如果外部 `brainstorming` 可用，则在这一阶段使用它
 3. 在进入架构规划前暂停，等待你的确认
 4. 启动架构师拆分工作并分配给 rd-1 和 QA；如果外部 `writing-plans` 可用，则在这一阶段使用它
@@ -327,7 +334,7 @@ Issue 标记为完成。
 **init-team** 生成结构化的 Markdown 文件来定义你的团队。每个智能体获得：
 - **系统提示词** — 包含身份、职责、行为准则和协作指南
 - **能力档案** — 记录技能、成长方向和学习日志
-- **工作目录** — 用于记录工作进展
+- **Issue 目录** — 包含 Issue 文件和所有角色的工作日志
 
 `init-team` 现在总是先询问语言，再进入模板或自定义组合、项目命名、可选角色自定义和最终确认。
 
@@ -335,7 +342,7 @@ Issue 标记为完成。
 1. 读取相关智能体的提示词、档案和协作规范
 2. 通过引导流程为新任务创建 Issue，或继续已有 Issue
 3. 只启动当前阶段所需的角色，并注入完整上下文
-4. 当前角色执行工作、记录日志，并**自动更新自己的能力档案**（新技能、成长方向、学习记录）
+4. 当前角色执行工作、在 Issue 目录中记录日志，并**自动更新自己的能力档案**（新技能、成长方向、学习记录）
 5. 每个阶段结束后暂停，等待你明确确认后再进入下一阶段
 6. 按照 PM 需求接收、架构师规划与分配、实现、QA 审查、架构师最终技术审查、PM 最终验收的顺序继续推进
 

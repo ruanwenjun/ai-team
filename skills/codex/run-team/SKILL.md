@@ -46,7 +46,11 @@ Follow this sequence in order:
    - `continue to the next stage`
    - `rerun the current stage`
    - `apply targeted feedback to the current stage`
-9. Launch only the roles required by the current stage.
+9. Display the roles involved in the current stage and let the user choose a run mode:
+   - **Single role** — pick one role, run it in the current conversation (no subagent)
+   - **All roles — parallel subagents** — dispatch all roles as subagents concurrently (existing behavior)
+   - **All roles — sequential in current session** — run each role one by one in the current conversation, pausing for user confirmation between each role
+10. Launch according to the chosen run mode.
 
 ### Legacy Command Handling
 
@@ -99,6 +103,44 @@ Each handoff requires explicit user approval before the next stage starts. If th
 
 If architect assigns multiple developers in the implementation stage, they all work within the same gated stage. QA cannot begin until every assigned developer has completed their work and the user explicitly approves moving forward.
 
+### Role Selection and Run Modes
+
+Before launching a stage, display the roles involved and let the user choose how to run them.
+
+**Display format example:**
+
+```
+当前阶段：Implementation
+涉及角色：rd-1 (Developer), rd-2 (Developer)
+
+运行方式：
+1. 选择单个角色 — 在当前会话中运行
+2. 全部角色 — 并行子 agent
+3. 全部角色 — 逐个在当前会话中运行
+```
+
+**Run mode details:**
+
+| Mode | How it works |
+|------|-------------|
+| Single role | User picks one role. Its prompt, profile, issue content, collaboration guidelines, and Superpowers skill are loaded into the current conversation. The orchestrator acts as that role directly — no subagent. After this role completes, enter the stage gate. |
+| All roles — parallel subagents | Dispatch all roles as subagents concurrently (existing behavior). |
+| All roles — sequential in session | Run each role one by one in the current conversation. After each role completes its work and writes its worklog/issue update, pause and wait for user confirmation before switching to the next role. After the last role completes, enter the stage gate. |
+
+**Current-session execution rules:**
+
+When running a role in the current session (single role or sequential mode):
+
+1. Read the role's prompt, profile, issue content, collaboration guidelines.
+2. Load the relevant Superpowers skill via the platform's skill mechanism (if available).
+3. Announce: "Now acting as {role-id} ({role-name})."
+4. Follow the role's prompt and Superpowers skill instructions to execute the work.
+5. Write the worklog entry and update the issue file, same as a subagent would.
+6. Update the role's profile.
+7. Announce completion and present the stage summary.
+
+**Stage gate behavior is the same regardless of run mode** — after all roles in the current stage have completed, wait for explicit user approval before proceeding to the next stage.
+
 ### Optional External Superpowers Usage
 
 When the current platform exposes the relevant external Superpowers skill, roles should use it for the matching stage:
@@ -126,17 +168,18 @@ If the task, stage feedback, or issue history shows the implementation stage is 
 
 When the user chooses to start a new task:
 
-1. Scan `.ai-team/project/issues/` for the highest existing issue number.
+1. Scan `.ai-team/project/issues/` for the highest existing issue number (by directory name).
 2. Increment by one.
-3. Create the issue file at `.ai-team/project/issues/{number}-{slug}.md`.
+3. Create the issue directory at `.ai-team/project/issues/{number}-{slug}/`.
+4. Create the issue file at `.ai-team/project/issues/{number}-{slug}/issue.md`.
 
 ### Existing Issue Resume
 
 When the user chooses to continue an existing issue:
 
-1. List the existing issue files from `.ai-team/project/issues/`.
+1. List the existing issue directories from `.ai-team/project/issues/`.
 2. Ask the user to choose one.
-3. Read the full issue file.
+3. Read the issue file at `.ai-team/project/issues/{number}-{slug}/issue.md`.
 4. Infer the current stage and valid next actions from the recorded stage status and progress.
 
 ### Issue File Structure
@@ -236,40 +279,48 @@ Execute these steps in order:
 
 1. **Validate environment:**
    - Confirm `.ai-team/` directory exists. If not, tell the user to run `init-team` first.
-   - Confirm key files exist: `.ai-team/team.md`, `.ai-team/prompts/`, `.ai-team/profiles/`, and `.ai-team/project/issues/`.
+   - Confirm key files exist: `.ai-team/team.md`, `.ai-team/prompts/`, `.ai-team/profiles/`, and `.ai-team/project/issues/` (issues are directories, not files).
    - Confirm the active team contains at least one pm, at least one architect, at least one development role, and at least one qa.
    - If the team is incomplete, stop and tell the user to fix the team through `update-team`.
 2. **Resolve language and issue intent:**
    - Ask for language preference.
    - Ask whether to start a new task or continue an existing issue.
 3. **Create or read issue:**
-   - For a new task: collect task description, scan for the highest issue number, increment, and create a new issue file.
-   - For an existing issue: list existing issues, read the selected issue file, and infer the current stage from its status.
+   - For a new task: collect task description, scan for the highest issue number (by directory name), increment, create the issue directory, and write `issue.md` inside it.
+   - For an existing issue: list existing issue directories, read the selected `issue.md`, and infer the current stage from its status.
 4. **Determine valid next action:**
    - Offer only `continue to the next stage`, `rerun the current stage`, or `apply targeted feedback to the current stage`.
    - Use the issue state to decide which stage is eligible to run next.
-5. **Load Superpowers skill for the current stage:**
+5. **Display roles and choose run mode:**
+   - Show the roles involved in the current stage.
+   - Let the user choose: single role, all roles parallel subagents, or all roles sequential in session.
+   - See "Role Selection and Run Modes" above for the full display format and mode details.
+6. **Load Superpowers skill for the current stage:**
    - Determine which Superpowers skill maps to the current stage (see the stage-to-skill mapping table in Superpowers Skill Injection).
    - Load the relevant skill content using the platform's skill invocation mechanism.
    - If the skill loading fails or the skill is not installed, proceed without it.
-6. **Launch agents:**
-   - For each role in the active stage, read its prompt, profile, issue content, and collaboration guidelines.
-   - Include the loaded Superpowers skill content (from step 5) in the subagent's prompt under a `## Superpowers Skill: {name}` header.
-   - Tell the subagent to follow the Superpowers Skill instructions as its primary workflow for this stage.
-   - Assemble the full context and launch the agent as a subagent.
-7. **Agent execution:**
-   - Each agent executes the task from its role perspective, following the injected Superpowers skill workflow when present.
-   - If no Superpowers skill was injected, the agent continues the normal AI Team stage workflow.
-   - Each agent writes a worklog entry to `.ai-team/worklog/{id}/`.
-   - Each agent updates the current issue file by appending work summary and listing all files created or modified under the current stage's Progress section.
-   - Each agent updates its own profile at `.ai-team/profiles/{id}.md`.
-   - Each agent reports the model it is running on (best-effort).
+7. **Execute according to run mode:**
+   - **Parallel subagents mode:**
+     - For each role, read its prompt, profile, issue content, and collaboration guidelines.
+     - Include the loaded Superpowers skill content in the subagent's prompt under a `## Superpowers Skill: {name}` header.
+     - Tell the subagent to follow the Superpowers Skill instructions as its primary workflow.
+     - Assemble the full context and launch the agent as a subagent.
+   - **Single role or sequential mode (current session):**
+     - Read the role's prompt, profile, issue content, and collaboration guidelines.
+     - Announce "Now acting as {role-id} ({role-name})."
+     - Follow the role's prompt and loaded Superpowers skill to execute the work directly in the current conversation.
+     - For sequential mode: after each role completes, pause and wait for user confirmation before starting the next role.
+8. **Role execution (all modes):**
+   - Each role writes a worklog entry to the current issue directory at `.ai-team/project/issues/{number}-{slug}/{id}-stage-{n}-{stage-name}.md`.
+   - Each role updates the issue file (`issue.md` in the same directory) by appending work summary and listing all files created or modified under the current stage's Progress section.
+   - Each role updates its own profile at `.ai-team/profiles/{id}.md`.
+   - Each role reports the model it is running on (best-effort).
 8. **Collect results:**
    - Gather all agent outputs.
    - Generate a stage summary report.
    - Update the issue file with the stage results.
 9. **Prompt user to review:**
-   - After the current stage completes, display a checklist of issue, worklog, profile, and produced files for each agent in that stage.
+   - After the current stage completes, display a checklist of all files in the issue directory and updated profiles for each agent in that stage.
 10. **Enter the stage gate:**
    - Wait for explicit user approval before launching the next stage.
 
@@ -328,7 +379,7 @@ When multiple agents modify the same file, use boundary comments around each age
 
 ### No-Comment Files
 
-For files that do not support comments (JSON, binary, images, etc.), record the attribution in the worklog only. Do not modify these files to add attribution.
+For files that do not support comments (JSON, binary, images, etc.), record the attribution in the worklog entry only. Do not modify these files to add attribution.
 
 ---
 
@@ -366,7 +417,7 @@ An iterative loop within the current conversation (single-session mode only):
 
 ## Worklog Entry Template
 
-Each agent writes a worklog entry to `.ai-team/worklog/{id}/{issue-number}-stage-{n}.md`:
+Each agent writes a worklog entry to `.ai-team/project/issues/{number}-{slug}/{id}-stage-{n}-{stage-name}.md`:
 
 ```markdown
 # {Issue Number} - {Brief Description}
@@ -401,6 +452,6 @@ Handle these error cases with clear, actionable messages:
 | `.ai-team/` directory missing | Tell the user: "No `.ai-team/` directory found. Run `init-team` first to set up your AI team." |
 | `.ai-team/` exists but key files missing (`team.md`, `prompts/`, `profiles/`) | Report the specific missing files and suggest re-running `init-team`. |
 | Active team missing required coverage | Tell the user the team must include at least one pm, at least one architect, at least one development role, and at least one qa; direct them to `update-team`. |
-| Existing issue selection is invalid | List existing issues in `.ai-team/project/issues/` and ask the user to pick one. |
+| Existing issue selection is invalid | List existing issue directories in `.ai-team/project/issues/` and ask the user to pick one. |
 | Stage cannot advance yet | Explain which earlier approval or unfinished work is still blocking the next stage. |
 | Subagent call fails | Report the failure, record it in the issue file, and ask the user how to proceed. |
