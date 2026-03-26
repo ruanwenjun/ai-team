@@ -14,31 +14,29 @@
 
 ---
 
-AI Team provides three skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) and OpenAI Codex CLI that help you initialize, run, and update multi-agent teams. Each agent gets its own role, system prompt, and capability profile, then collaborates through shared project docs and issue directories like a real development group.
+AI Team provides a unified skill for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) and OpenAI Codex CLI that helps you initialize, run, and update multi-agent teams via `/ai-team init|run|update`. Each agent gets its own role, system prompt, and capability profile, then collaborates through shared project docs and issue directories like a real development group.
 
-The generated prompts and docs are shared assets used by the supported Claude Code and OpenAI Codex CLI workflows. Both platforms support the interactive `run-team` flow for dispatching the current stage directly.
+The generated prompts and docs are shared assets used by the supported Claude Code and OpenAI Codex CLI workflows. Both platforms support the interactive `/ai-team run` flow for dispatching the current stage directly.
 
-## Optional External Superpowers Usage
+## Mandatory Superpowers Usage
 
-AI Team can use external Superpowers skills on both Codex and Claude Code when the current platform exposes them.
+Every team member MUST invoke their designated Superpowers skill before producing work output. This is enforced in the role execution flow.
 
-- If the relevant external skill is available, the matching role should use it
-- If the external skill is not available, AI Team continues its normal workflow
-- AI Team does not generate or simulate a local Superpowers replacement
-
-Default role mapping when external skills are available:
-
-- PM -> `brainstorming`
-- Architect -> `writing-plans`
-- Developers (`rd`, `fe`, `be`) -> `test-driven-development`
-- QA -> testing plus `verification-before-completion`
-- Bug, regression, and production-issue work -> developers use `systematic-debugging` before TDD
+| Role | Required Skill | When |
+|------|---------------|------|
+| PM | `/brainstorming` | Before producing requirements |
+| Architect | `/plan` | Before producing design or task breakdown |
+| Developers (`rd`, `fe`, `be`) | `/tdd` | Before writing implementation |
+| Developers (bug/regression) | `/systematic-debugging` then `/tdd` | Debug first, then TDD for the fix |
+| QA | `/verify` | Before finalizing test report |
+| Designer | `/brainstorming` | Before producing design specs |
+| Data Engineer | `/tdd` | Before writing pipeline code |
 
 ## Features
 
-- **Guided lifecycle commands** — interactive-only `init-team`, `run-team`, and `update-team` that advance one stage at a time
+- **Guided lifecycle commands** — interactive-only `/ai-team init`, `/ai-team run`, and `/ai-team update` that advance one stage at a time
 - **Reusable prompts and docs** — generated markdown assets are shared across the supported Claude Code and OpenAI Codex CLI workflows
-- **Optional external Superpowers support** — use external brainstorming, planning, TDD, debugging, and verification skills only when they are available
+- **Mandatory Superpowers integration** — every role must invoke its designated skill (brainstorming, planning, TDD, debugging, verification) before producing output
 - **Role-specific system prompts** — each agent knows its identity, responsibilities, and how to collaborate
 - **Self-learning agents** — each agent updates its capability profile after every work stage, tracking new skills and growth
 - **Structured collaboration** — file-based communication, issue tracking, decision records
@@ -50,31 +48,27 @@ Default role mapping when external skills are available:
 
 ### Claude Code
 
-**Option A: Project-level skills (recommended for team sharing)**
+**Option A: Project-level skill (recommended for team sharing)**
 
-Copy the skills into your project's `.claude/skills/` directory:
+Copy the skill into your project's `.claude/skills/` directory:
 
 ```bash
 # In your project root
 git clone https://github.com/ruanwenjun/ai-team.git /tmp/ai-team
 mkdir -p .claude/skills
-cp -r /tmp/ai-team/skills/claude-code/init-team .claude/skills/init-team
-cp -r /tmp/ai-team/skills/claude-code/run-team .claude/skills/run-team
-cp -r /tmp/ai-team/skills/claude-code/update-team .claude/skills/update-team
+cp -r /tmp/ai-team/skills/claude-code/ai-team .claude/skills/ai-team
 ```
 
 Claude Code auto-discovers skills in `.claude/skills/` — no configuration needed.
 Project-level skills only apply when Claude Code is started in this project directory (or one of its subdirectories).
 
-**Option B: Personal skills (available across all projects)**
+**Option B: Personal skill (available across all projects)**
 
 ```bash
 # Copy to your personal skills directory
 git clone https://github.com/ruanwenjun/ai-team.git /tmp/ai-team
 mkdir -p ~/.claude/skills
-cp -r /tmp/ai-team/skills/claude-code/init-team ~/.claude/skills/init-team
-cp -r /tmp/ai-team/skills/claude-code/run-team ~/.claude/skills/run-team
-cp -r /tmp/ai-team/skills/claude-code/update-team ~/.claude/skills/update-team
+cp -r /tmp/ai-team/skills/claude-code/ai-team ~/.claude/skills/ai-team
 ```
 
 **Option C: Symlink (easy updates via git pull)**
@@ -85,27 +79,25 @@ git clone https://github.com/ruanwenjun/ai-team.git ~/ai-team
 
 # Symlink to personal skills
 mkdir -p ~/.claude/skills
-ln -s ~/ai-team/skills/claude-code/init-team ~/.claude/skills/init-team
-ln -s ~/ai-team/skills/claude-code/run-team ~/.claude/skills/run-team
-ln -s ~/ai-team/skills/claude-code/update-team ~/.claude/skills/update-team
+ln -s ~/ai-team/skills/claude-code/ai-team ~/.claude/skills/ai-team
 ```
 
-After installation, verify skills are available:
-1. If you installed the skills while Claude Code was already running, exit and start a new Claude Code session
+After installation, verify the skill is available:
+1. If you installed the skill while Claude Code was already running, exit and start a new Claude Code session
 2. Make sure you are in the project root that contains `.claude/skills/`
 3. Then run:
 
 ```bash
-/init-team
+/ai-team init
 ```
 
-If you still see `Unrecognized command '/init-team'`, it usually means:
+If you still see `Unrecognized command '/ai-team'`, it usually means:
 - Claude Code was not started from this project root
-- The skills were copied in after the current session started and have not been reloaded yet
+- The skill was copied in after the current session started and has not been reloaded yet
 
 ### OpenAI Codex CLI
 
-Install the skills into Codex's personal skills directory at `~/.codex/skills/`:
+Install the skill into Codex's personal skills directory at `~/.codex/skills/`:
 
 ```bash
 # Clone the repository
@@ -114,10 +106,8 @@ git clone https://github.com/ruanwenjun/ai-team.git /tmp/ai-team
 # Create the Codex skills directory
 mkdir -p ~/.codex/skills
 
-# Install all three skills
-cp -r /tmp/ai-team/skills/codex/init-team ~/.codex/skills/init-team
-cp -r /tmp/ai-team/skills/codex/run-team ~/.codex/skills/run-team
-cp -r /tmp/ai-team/skills/codex/update-team ~/.codex/skills/update-team
+# Install the skill
+cp -r /tmp/ai-team/skills/codex/ai-team ~/.codex/skills/ai-team
 ```
 
 **Optional: use symlinks for easier updates via `git pull`**
@@ -128,30 +118,28 @@ git clone https://github.com/ruanwenjun/ai-team.git ~/ai-team
 
 # Symlink into Codex skills
 mkdir -p ~/.codex/skills
-ln -s ~/ai-team/skills/codex/init-team ~/.codex/skills/init-team
-ln -s ~/ai-team/skills/codex/run-team ~/.codex/skills/run-team
-ln -s ~/ai-team/skills/codex/update-team ~/.codex/skills/update-team
+ln -s ~/ai-team/skills/codex/ai-team ~/.codex/skills/ai-team
 ```
 
 Restart Codex after installation so it can pick up the new skills.
 
 ## Quick Start
 
-All lifecycle commands are interactive-only and stage-gated:
+All subcommands are interactive-only and stage-gated:
 
 ```bash
-/init-team
-/run-team
-/update-team
+/ai-team init
+/ai-team run
+/ai-team update
 ```
 
-- `/init-team` asks for language, template or custom composition, project name, and whether to customize role descriptions.
-- `/run-team` asks whether to start a new task or continue an existing issue, then offers only the next valid stage actions.
-- `/update-team` asks how to add or remove members, previews the resulting team and archive changes, and applies updates only after confirmation.
+- `/ai-team init` asks for language, template or custom composition, project name, and whether to customize role descriptions.
+- `/ai-team run` asks whether to start a new task or continue an existing issue, then offers only the next valid stage actions.
+- `/ai-team update` asks how to add or remove members, previews the resulting team and archive changes, and applies updates only after confirmation.
 
-Legacy argument-based forms are deprecated. If you used the previous command styles, rerun the bare command and provide the same information through the guided prompts.
+Legacy forms (`/init-team`, `/run-team`, `/update-team`) are deprecated. If you used the previous command styles, use the new `/ai-team <subcommand>` form instead.
 
-`/init-team` creates a `.ai-team/` directory in your project:
+`/ai-team init` creates a `.ai-team/` directory in your project:
 
 ```
 .ai-team/
@@ -175,7 +163,7 @@ Legacy argument-based forms are deprecated. If you used the previous command sty
     └── ...
 ```
 
-`/update-team` creates `.ai-team/archive/roles/{id}/` later when roles are removed. It is not part of the initial `init-team` scaffold.
+`/ai-team update` creates `.ai-team/archive/roles/{id}/` later when roles are removed. It is not part of the initial scaffold.
 
 Each issue is a directory under `project/issues/` containing the issue file and all role worklogs:
 
@@ -195,7 +183,7 @@ project/issues/001-user-login/
 
 ```bash
 # Step 1: Initialize a web team
-/init-team
+/ai-team init
 ```
 
 Choose `web-standard`, set the project name to `my-web-app`, pick a language, and confirm the preview. This creates a team with 1 PM, 1 Architect, 2 Developers (rd-1, rd-2), and 1 QA Engineer:
@@ -211,16 +199,16 @@ Generated .ai-team/ with key files including:
 
 ```bash
 # Step 2: Start a new task
-/run-team
+/ai-team run
 ```
 
 Choose a language, select `start a new task`, and enter `implement user login with JWT authentication`.
 
 The skill then runs as a gated sequence:
 1. Creates issue directory `001-implement-user-login/` with `issue.md`
-2. Launches PM to capture and clarify the requirement, optionally using external `brainstorming` when available
+2. Launches PM with mandatory `/brainstorming` to capture and clarify the requirement
 3. Pauses for your confirmation before architect planning starts
-4. Launches architect to decompose the work and assign rd-1 plus QA, optionally using external `writing-plans` when available
+4. Launches architect with mandatory `/plan` to decompose the work and assign rd-1 plus QA
 5. Pauses for your confirmation before implementation starts
 
 ```
@@ -235,7 +223,7 @@ Awaiting your confirmation to start architect planning.
 > proceed
 ```
 
-After you confirm, the workflow continues with architect planning, implementation, QA review, final technical review from architect, and PM acceptance. When the relevant external Superpowers skill is available, that role uses it for the stage.
+After you confirm, the workflow continues with architect planning, implementation (with mandatory `/tdd`), QA review (with mandatory `/verify`), final technical review from architect, and PM acceptance. Every role invokes its designated Superpowers skill before producing output.
 
 ```bash
 # Step 4: Final acceptance
@@ -247,7 +235,7 @@ Issue marked as done.
 ### Example 2: Updating an Active Team
 
 ```bash
-/update-team
+/ai-team update
 ```
 
 Use the action loop to add members, remove members, and finish with a preview before applying:
@@ -261,14 +249,14 @@ Use the action loop to add members, remove members, and finish with a preview be
 
 In Terminal 1:
 ```bash
-/run-team
+/ai-team run
 ```
 
 Choose `continue an existing issue`, open the same implementation-stage issue, and claim `rd-1` if the stage shows `rd-1: pending` and `rd-2: pending`.
 
 In Terminal 2:
 ```bash
-/run-team
+/ai-team run
 ```
 
 Select the same issue. The second CLI re-reads the issue, sees the current role-status table, and can claim `rd-2` while `rd-1` is already `in-progress` or `done`. QA is not offered until every role assigned to the implementation stage is `done` and the user approves moving forward.
@@ -302,23 +290,23 @@ Any abbreviation not listed above is treated as a custom role — AI generates a
 
 | Command | Guided flow |
 |---------|-------------|
-| `/init-team` | Choose language, team shape, project name, and role customization settings |
-| `/run-team` | Choose language, new task vs existing issue, then the next valid stage or role action |
-| `/update-team` | Choose language, edit the active team through add/remove/review, then confirm changes |
+| `/ai-team init` | Choose language, team shape, project name, and role customization settings |
+| `/ai-team run` | Choose language, new task vs existing issue, then the next valid stage or role action |
+| `/ai-team update` | Choose language, edit the active team through add/remove/review, then confirm changes |
 
-These commands are interactive-only. Legacy argument-based forms are deprecated and should be rerun as bare commands.
-The flow is stage-gated, so `/run-team` only surfaces the next valid stage or role action for the current issue state.
+All subcommands are interactive-only. Legacy forms (`/init-team`, `/run-team`, `/update-team`) are deprecated.
+The flow is stage-gated, so `/ai-team run` only surfaces the next valid stage or role action for the current issue state.
 
 ## How It Works
 
-**init-team** generates structured markdown files that define your team. Each agent gets:
+**`/ai-team init`** generates structured markdown files that define your team. Each agent gets:
 - A **system prompt** with its identity, responsibilities, behavioral guidelines, and collaboration instructions
 - A **capability profile** tracking skills and growth, with a learning log
 - Access to the shared **issue directories** that contain the issue file and all role worklogs
 
-`init-team` always asks for language first, then walks through template or custom composition selection, project naming, optional role customization, and final confirmation.
+`/ai-team init` always asks for language first, then walks through template or custom composition selection, project naming, optional role customization, and final confirmation.
 
-In Claude Code and OpenAI Codex CLI, **run-team** reads these files and runs the current stage either in-session or through the platform's agent/subagent mechanism:
+In Claude Code and OpenAI Codex CLI, **`/ai-team run`** reads these files and runs the current stage either in-session or through the platform's agent/subagent mechanism:
 1. Reads the relevant prompts, profiles, and collaboration guidelines
 2. Either creates an issue for a new task or resumes an existing issue through the guided flow
 3. Tracks each assigned role inside the current stage as `pending`, `in-progress`, or `done`
@@ -327,9 +315,9 @@ In Claude Code and OpenAI Codex CLI, **run-team** reads these files and runs the
 6. Enters the stage gate only after the whole stage is complete, then waits for your explicit confirmation before moving on
 7. Continues through PM requirement intake, architect planning and assignment, implementation, QA review, architect final technical review, and PM final acceptance
 
-`run-team` blocks if the active team does not contain at least one PM, at least one architect, at least one development role, and at least one QA role. In that case, use `/update-team` first.
+`/ai-team run` blocks if the active team does not contain at least one PM, at least one architect, at least one development role, and at least one QA role. In that case, use `/ai-team update` first.
 
-**update-team** safely changes an existing team without rewriting issue history:
+**`/ai-team update`** safely changes an existing team without rewriting issue history:
 - archives removed roles under `.ai-team/archive/roles/{id}/`
 - regenerates prompts and profiles for every active role after confirmation
 - appends a team update entry to `.ai-team/project/changelog.md`

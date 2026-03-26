@@ -14,31 +14,29 @@
 
 ---
 
-AI Team 为 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 和 OpenAI Codex CLI 提供三个 skill，帮助你初始化、运行和更新多智能体团队。每个智能体拥有独立的角色、系统提示词和能力档案，并通过共享的项目文档与 Issue 目录协作，像真实开发团队一样完成项目。
+AI Team 为 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 和 OpenAI Codex CLI 提供统一的 skill，通过 `/ai-team init|run|update` 帮助你初始化、运行和更新多智能体团队。每个智能体拥有独立的角色、系统提示词和能力档案，并通过共享的项目文档与 Issue 目录协作，像真实开发团队一样完成项目。
 
-生成的提示词和文档是 Claude Code 与 OpenAI Codex CLI 两个受支持工作流共享的资产。这两个平台都支持交互式 `run-team`，可以直接分派当前阶段所需的智能体。
+生成的提示词和文档是 Claude Code 与 OpenAI Codex CLI 两个受支持工作流共享的资产。这两个平台都支持交互式 `/ai-team run`，可以直接分派当前阶段所需的智能体。
 
-## 可选的外部 Superpowers 支持
+## 强制 Superpowers 集成
 
-AI Team 可以在 Codex 和 Claude Code 两端使用外部 Superpowers skill，但前提是当前平台真的暴露了这些 skill。
+每个团队成员在产出工作成果前，必须调用其指定的 Superpowers skill。这在角色执行流程中是强制的。
 
-- 如果相关外部 skill 可用，对应角色就使用它
-- 如果外部 skill 不可用，AI Team 继续按原本流程运行
-- AI Team 不会生成或模拟一套本地 Superpowers 替代品
-
-当外部 skill 可用时，默认角色映射如下：
-
-- PM -> `brainstorming`
-- Architect -> `writing-plans`
-- 开发角色（`rd`、`fe`、`be`）-> `test-driven-development`
-- QA -> 测试执行 + `verification-before-completion`
-- bug、回归和线上问题任务 -> 开发角色先 `systematic-debugging`，再进入 TDD
+| 角色 | 必须调用的 Skill | 时机 |
+|------|-----------------|------|
+| PM | `/brainstorming` | 产出需求文档前 |
+| Architect | `/plan` | 产出设计或任务拆解前 |
+| 开发角色（`rd`、`fe`、`be`） | `/tdd` | 编写实现代码前 |
+| 开发角色（bug/回归） | `/systematic-debugging` 然后 `/tdd` | 先调试，再 TDD 修复 |
+| QA | `/verify` | 完成测试报告前 |
+| Designer | `/brainstorming` | 产出设计规范前 |
+| Data Engineer | `/tdd` | 编写管道代码前 |
 
 ## 特性
 
-- **引导式生命周期命令** — 交互式 `init-team`、`run-team`、`update-team`，按阶段逐步推进
+- **引导式生命周期命令** — 交互式 `/ai-team init`、`/ai-team run`、`/ai-team update`，按阶段逐步推进
 - **可复用的提示词与文档** — 生成的 Markdown 资产可在受支持的 Claude Code 与 OpenAI Codex CLI 工作流中共享
-- **可选的外部 Superpowers 支持** — 只有在外部 skill 可用时，才使用 brainstorming、planning、TDD、debugging 和 verification
+- **强制 Superpowers 集成** — 每个角色必须在产出前调用指定的 skill（brainstorming、planning、TDD、debugging、verification）
 - **角色专属提示词** — 每个智能体清楚自己的身份、职责和协作方式
 - **自我学习** — 每个智能体在每轮工作后自动更新能力档案，记录新技能和成长
 - **结构化协作** — 基于文件的沟通、Issue 跟踪、决策记录
@@ -50,31 +48,27 @@ AI Team 可以在 Codex 和 Claude Code 两端使用外部 Superpowers skill，�
 
 ### Claude Code
 
-**方式 A：项目级 skills（推荐，便于团队共享）**
+**方式 A：项目级 skill（推荐，便于团队共享）**
 
-将 skills 复制到项目的 `.claude/skills/` 目录：
+将 skill 复制到项目的 `.claude/skills/` 目录：
 
 ```bash
 # 在你的项目根目录下
 git clone https://github.com/ruanwenjun/ai-team.git /tmp/ai-team
 mkdir -p .claude/skills
-cp -r /tmp/ai-team/skills/claude-code/init-team .claude/skills/init-team
-cp -r /tmp/ai-team/skills/claude-code/run-team .claude/skills/run-team
-cp -r /tmp/ai-team/skills/claude-code/update-team .claude/skills/update-team
+cp -r /tmp/ai-team/skills/claude-code/ai-team .claude/skills/ai-team
 ```
 
 Claude Code 会自动发现 `.claude/skills/` 中的 skills，无需额外配置。
 项目级 skills 只在**当前项目目录**（或其子目录）中生效。
 
-**方式 B：个人级 skills（所有项目通用）**
+**方式 B：个人级 skill（所有项目通用）**
 
 ```bash
 # 复制到个人 skills 目录
 git clone https://github.com/ruanwenjun/ai-team.git /tmp/ai-team
 mkdir -p ~/.claude/skills
-cp -r /tmp/ai-team/skills/claude-code/init-team ~/.claude/skills/init-team
-cp -r /tmp/ai-team/skills/claude-code/run-team ~/.claude/skills/run-team
-cp -r /tmp/ai-team/skills/claude-code/update-team ~/.claude/skills/update-team
+cp -r /tmp/ai-team/skills/claude-code/ai-team ~/.claude/skills/ai-team
 ```
 
 **方式 C：软链接（通过 git pull 轻松更新）**
@@ -85,9 +79,7 @@ git clone https://github.com/ruanwenjun/ai-team.git ~/ai-team
 
 # 软链接到个人 skills
 mkdir -p ~/.claude/skills
-ln -s ~/ai-team/skills/claude-code/init-team ~/.claude/skills/init-team
-ln -s ~/ai-team/skills/claude-code/run-team ~/.claude/skills/run-team
-ln -s ~/ai-team/skills/claude-code/update-team ~/.claude/skills/update-team
+ln -s ~/ai-team/skills/claude-code/ai-team ~/.claude/skills/ai-team
 ```
 
 安装后验证：
@@ -96,16 +88,16 @@ ln -s ~/ai-team/skills/claude-code/update-team ~/.claude/skills/update-team
 3. 再执行：
 
 ```bash
-/init-team
+/ai-team init
 ```
 
-如果仍然提示 `Unrecognized command '/init-team'`，通常是因为：
+如果仍然提示 `Unrecognized command '/ai-team'`，通常是因为：
 - Claude Code 不是从当前项目根目录启动的
-- skills 是在当前会话启动后才复制进去的，尚未重新加载
+- skill 是在当前会话启动后才复制进去的，尚未重新加载
 
 ### OpenAI Codex CLI
 
-将当前仓库中的 skill 安装到 Codex 的个人 skills 目录 `~/.codex/skills/`：
+将 skill 安装到 Codex 的个人 skills 目录 `~/.codex/skills/`：
 
 ```bash
 # 克隆仓库
@@ -114,10 +106,8 @@ git clone https://github.com/ruanwenjun/ai-team.git /tmp/ai-team
 # 创建 Codex skills 目录
 mkdir -p ~/.codex/skills
 
-# 安装这三个 skill
-cp -r /tmp/ai-team/skills/codex/init-team ~/.codex/skills/init-team
-cp -r /tmp/ai-team/skills/codex/run-team ~/.codex/skills/run-team
-cp -r /tmp/ai-team/skills/codex/update-team ~/.codex/skills/update-team
+# 安装 skill
+cp -r /tmp/ai-team/skills/codex/ai-team ~/.codex/skills/ai-team
 ```
 
 **可选：使用软链接，便于后续通过 `git pull` 更新**
@@ -128,30 +118,28 @@ git clone https://github.com/ruanwenjun/ai-team.git ~/ai-team
 
 # 软链接到 Codex skills
 mkdir -p ~/.codex/skills
-ln -s ~/ai-team/skills/codex/init-team ~/.codex/skills/init-team
-ln -s ~/ai-team/skills/codex/run-team ~/.codex/skills/run-team
-ln -s ~/ai-team/skills/codex/update-team ~/.codex/skills/update-team
+ln -s ~/ai-team/skills/codex/ai-team ~/.codex/skills/ai-team
 ```
 
 安装后请重启 Codex，使新 skill 生效。
 
 ## 快速开始
 
-所有生命周期命令现在都是交互式的，并按阶段门控推进：
+所有子命令都是交互式的，并按阶段门控推进：
 
 ```bash
-/init-team
-/run-team
-/update-team
+/ai-team init
+/ai-team run
+/ai-team update
 ```
 
-- `/init-team` 会询问语言、模板或自定义组合、项目名，以及是否自定义角色描述。
-- `/run-team` 会询问是新任务还是继续已有 Issue，然后只提供当前合法的下一步阶段动作。
-- `/update-team` 会通过 add/remove/review 循环维护团队，并在最终确认后才真正落盘。
+- `/ai-team init` 会询问语言、模板或自定义组合、项目名，以及是否自定义角色描述。
+- `/ai-team run` 会询问是新任务还是继续已有 Issue，然后只提供当前合法的下一步阶段动作。
+- `/ai-team update` 会通过 add/remove/review 循环维护团队，并在最终确认后才真正落盘。
 
-旧的参数式写法已废弃。如果你之前使用过旧命令形式，请重新运行裸命令，并在引导流程里提供同样的信息。
+旧的命令形式（`/init-team`、`/run-team`、`/update-team`）已废弃，请使用新的 `/ai-team <子命令>` 形式。
 
-`/init-team` 会在你的项目中创建 `.ai-team/` 目录：
+`/ai-team init` 会在你的项目中创建 `.ai-team/` 目录：
 
 ```
 .ai-team/
@@ -175,7 +163,7 @@ ln -s ~/ai-team/skills/codex/update-team ~/.codex/skills/update-team
     └── ...
 ```
 
-`.ai-team/archive/roles/{id}/` 会在后续运行 `/update-team` 且有角色被移除时才创建，不属于 `init-team` 的初始脚手架。
+`.ai-team/archive/roles/{id}/` 会在后续运行 `/ai-team update` 且有角色被移除时才创建，不属于初始脚手架。
 
 每个 Issue 是 `project/issues/` 下的一个目录，包含 Issue 文件和所有角色的工作日志：
 
@@ -195,7 +183,7 @@ project/issues/001-user-login/
 
 ```bash
 # 第一步：初始化 Web 团队
-/init-team
+/ai-team init
 ```
 
 选择 `web-standard`，把项目名设为 `my-web-app`，选择语言并确认预览。这样会创建一个包含 1 个 PM、1 个架构师、2 个开发（rd-1, rd-2）和 1 个 QA 的团队：
@@ -211,16 +199,16 @@ project/issues/001-user-login/
 
 ```bash
 # 第二步：启动新任务
-/run-team
+/ai-team run
 ```
 
 在引导流程里选择语言，选择 `start a new task`，并输入 `实现 JWT 用户登录功能`。
 
 Skill 会按门控阶段自动执行：
 1. 创建 Issue 目录 `001-implement-user-login/` 及 `issue.md`
-2. 启动 PM 接收并澄清需求；如果外部 `brainstorming` 可用，则在这一阶段使用它
+2. 启动 PM，强制调用 `/brainstorming` 接收并澄清需求
 3. 在进入架构规划前暂停，等待你的确认
-4. 启动架构师拆分工作并分配给 rd-1 和 QA；如果外部 `writing-plans` 可用，则在这一阶段使用它
+4. 启动架构师，强制调用 `/plan` 拆分工作并分配给 rd-1 和 QA
 5. 在进入实现阶段前暂停，等待你的确认
 
 ```
@@ -235,7 +223,7 @@ Skill 会按门控阶段自动执行：
 > proceed
 ```
 
-你确认后，流程会继续进入架构规划、实现、QA 审查、架构师最终技术审查，以及 PM 最终验收。如果当前阶段对应的外部 Superpowers skill 可用，就在该阶段使用它。
+你确认后，流程会继续进入架构规划、实现（强制 `/tdd`）、QA 审查（强制 `/verify`）、架构师最终技术审查，以及 PM 最终验收。每个角色在产出前都会强制调用其指定的 Superpowers skill。
 
 ```bash
 # 第四步：最终验收
@@ -247,7 +235,7 @@ Issue 标记为完成。
 ### 示例 2：更新已有团队
 
 ```bash
-/update-team
+/ai-team update
 ```
 
 通过 action loop 添加成员、移除成员，并在真正应用前查看预览：
@@ -261,14 +249,14 @@ Issue 标记为完成。
 
 终端 1：
 ```bash
-/run-team
+/ai-team run
 ```
 
 在这个终端里选择 `continue an existing issue`，打开同一个 implementation 阶段的 Issue；如果当前角色状态显示 `rd-1: pending`、`rd-2: pending`，就认领 `rd-1`。
 
 终端 2：
 ```bash
-/run-team
+/ai-team run
 ```
 
 选择同一个 Issue。第二个 CLI 会重新读取 issue 里的角色状态表，在 `rd-1` 已经 `in-progress` 或 `done` 的情况下认领 `rd-2`。只有当 implementation 阶段所有被分配角色都变成 `done` 且用户批准后，才会进入 QA。
@@ -302,23 +290,23 @@ Issue 标记为完成。
 
 | 命令 | 引导流程内容 |
 |------|--------------|
-| `/init-team` | 选择语言、团队构成、项目名和角色自定义设置 |
-| `/run-team` | 选择语言、新任务或已有 Issue，再选择当前合法的阶段或角色动作 |
-| `/update-team` | 选择语言，通过 add/remove/review 循环调整团队，并最终确认 |
+| `/ai-team init` | 选择语言、团队构成、项目名和角色自定义设置 |
+| `/ai-team run` | 选择语言、新任务或已有 Issue，再选择当前合法的阶段或角色动作 |
+| `/ai-team update` | 选择语言，通过 add/remove/review 循环调整团队，并最终确认 |
 
-这些命令都是交互式的。旧的参数式写法已废弃，应改为重新运行裸命令。
-整个流程按阶段门控推进，因此 `/run-team` 只会根据当前 Issue 状态展示下一步合法的阶段或角色动作。
+所有子命令都是交互式的。旧的命令形式（`/init-team`、`/run-team`、`/update-team`）已废弃。
+整个流程按阶段门控推进，因此 `/ai-team run` 只会根据当前 Issue 状态展示下一步合法的阶段或角色动作。
 
 ## 工作原理
 
-**init-team** 生成结构化的 Markdown 文件来定义你的团队。每个智能体获得：
+**`/ai-team init`** 生成结构化的 Markdown 文件来定义你的团队。每个智能体获得：
 - **系统提示词** — 包含身份、职责、行为准则和协作指南
 - **能力档案** — 记录技能、成长方向和学习日志
 - 对共享 **Issue 目录** 的访问方式 — Issue 目录中包含 issue 文件和所有角色的工作日志
 
-`init-team` 现在总是先询问语言，再进入模板或自定义组合、项目命名、可选角色自定义和最终确认。
+`/ai-team init` 总是先询问语言，再进入模板或自定义组合、项目命名、可选角色自定义和最终确认。
 
-在 Claude Code 和 OpenAI Codex CLI 中，**run-team** 会读取这些文件，并根据运行模式在当前会话执行或通过平台的 agent/subagent 机制启动当前阶段：
+在 Claude Code 和 OpenAI Codex CLI 中，**`/ai-team run`** 会读取这些文件，并根据运行模式在当前会话执行或通过平台的 agent/subagent 机制启动当前阶段：
 1. 读取相关智能体的提示词、档案和协作规范
 2. 通过引导流程为新任务创建 Issue，或继续已有 Issue
 3. 在当前 stage 内按角色跟踪 `pending`、`in-progress`、`done` 三种状态
@@ -327,9 +315,9 @@ Issue 标记为完成。
 6. 只有整个 stage 完成后才进入 stage gate，并等待你明确确认后再进入下一阶段
 7. 按照 PM 需求接收、架构师规划与分配、实现、QA 审查、架构师最终技术审查、PM 最终验收的顺序继续推进
 
-如果 active team 不包含至少一个 PM、至少一个架构师、至少一个开发角色和至少一个 QA 角色，`run-team` 会直接阻止执行，并提示你先运行 `/update-team`。
+如果 active team 不包含至少一个 PM、至少一个架构师、至少一个开发角色和至少一个 QA 角色，`/ai-team run` 会直接阻止执行，并提示你先运行 `/ai-team update`。
 
-**update-team** 用来安全地调整已有团队，而不会重写 Issue 历史：
+**`/ai-team update`** 用来安全地调整已有团队，而不会重写 Issue 历史：
 - 把被移除角色归档到 `.ai-team/archive/roles/{id}/`
 - 确认后重新生成所有 active 角色的 prompts 和 profiles
 - 在 `.ai-team/project/changelog.md` 里追加 team update 记录
