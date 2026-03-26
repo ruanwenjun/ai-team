@@ -61,6 +61,16 @@ Before executing, load context in this order:
 
 ---
 
+## Knowledge Base Loading Strategy
+
+When loading `roles/{id}/templates/` and `roles/{id}/notes/`:
+- Read the file listing first (not all file contents)
+- Select files relevant to the current issue based on file names and the issue description
+- If the knowledge base is small (< 10 files), load all
+- If large, load only the most relevant files and note which ones were skipped
+
+---
+
 ## Role Execution
 
 1. Announce: "Now acting as {role-id} ({role-name})."
@@ -87,6 +97,27 @@ No stage gate, no approval flow. User decides next step.
 - `collaboration.md`, `team.md`, `project/README.md`
 
 **One-line summary:** Globally readable, write only to own directories.
+
+---
+
+## Multi-Session Collaboration
+
+Multiple CLI sessions can run different roles on the same issue simultaneously.
+
+### Coordination Model
+- Each role writes only to its own directory — no file conflicts between roles
+- Roles should read other roles' output at the start of execution for the latest context
+- If another role's output directory is empty, it means that role hasn't started or finished yet
+
+### Signaling Completion
+After a role finishes, it creates a status marker in its issue output directory:
+- File: `issues/{num}-{slug}/{id}/.done`
+- Content: completion timestamp and brief summary
+Other roles can check for `.done` files to know which roles have finished.
+
+### Safety
+- Never run the same role in two sessions simultaneously (profile.md write conflict)
+- Different roles can safely run in parallel on the same issue
 
 ---
 

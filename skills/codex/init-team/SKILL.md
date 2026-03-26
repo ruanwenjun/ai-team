@@ -274,6 +274,13 @@ You may also update your knowledge base:
 
 This is not optional. Self-reflection and knowledge base updates are part of your workflow.
 
+Before finishing, ask yourself:
+- Did I create anything reusable? (template, checklist, pattern) → save to `templates/`
+- Did I learn something non-obvious? (gotcha, insight, preference) → save to `notes/`
+
+## Prompt Evolution
+When you discover a better way to approach your work (new patterns, improved processes, better collaboration strategies), you may update your own `prompt.md` to reflect these improvements. This is how you grow stronger over time. Only modify sections that genuinely benefit from the change — don't change for the sake of changing.
+
 ## Default Output
 {Role-specific default output guidance}
 ```
